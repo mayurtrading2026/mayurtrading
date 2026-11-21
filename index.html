@@ -763,9 +763,13 @@
   <div id="toast-box" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-[60] max-w-[90%] px-4 py-2.5 rounded-2xl bg-mayur-dark text-amber-200 text-xs font-extrabold shadow-2xl border border-mayur-gold/50 text-center"></div>
 
   <!-- ========================================================= -->
-  <!-- 4. COMPLETE APPLICATION JAVASCRIPT LOGIC                  -->
+  <!-- 4. REAL-TIME CLOUD SYNC + COMPLETE APPLICATION LOGIC      -->
   <!-- ========================================================= -->
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
     const PRODUCT_PLANS = [
       { id: 'norm-1', cat: 'normal', badge: 'NORMAL PLAN', name: 'Mayur Starter Silk Pack', price: 245, daily: 35, days: 30, icon: 'fa-box-open' },
       { id: 'norm-2', cat: 'normal', badge: 'NORMAL PLAN', name: 'Mayur Heritage Brass Set', price: 690, daily: 105, days: 30, icon: 'fa-award' },
@@ -777,58 +781,196 @@
       { id: 'vip-3', cat: 'vip', badge: 'VIP LEVEL 3', name: 'Mayur VIP Maharaja Reserve', price: 45000, daily: 8500, days: 45, icon: 'fa-trophy' }
     ];
 
-    const STORAGE_KEYS = {
-      USERS: 'mayur_users_v2',
-      SESSION: 'mayur_session_phone_v2',
-      DEPOSITS: 'mayur_deposits_v2',
-      MESSAGES: 'mayur_messages_v2',
-      SETTINGS: 'mayur_settings_v2'
-    };
+    const LOCAL_STORE_KEY = 'mayur_trading_portal_v3';
 
-    let currentFilter = 'all';
-    let generatedOtp = null;
-
-    function getStore(key, fallback) {
+    function loadLocalBackup() {
       try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
-      } catch (e) {
-        return fallback;
-      }
+        const raw = localStorage.getItem(LOCAL_STORE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return {
+            settings: {
+              upiId: (parsed.settings && parsed.settings.upiId) || 'mayurtrading@upi',
+              qrUrl: (parsed.settings && parsed.settings.qrUrl) || '',
+              adminPin: (parsed.settings && parsed.settings.adminPin) || 'MAYUR@786'
+            },
+            users: parsed.users || {},
+            deposits: Array.isArray(parsed.deposits) ? parsed.deposits : [],
+            messages: Array.isArray(parsed.messages) ? parsed.messages : []
+          };
+        }
+      } catch (e) {}
+      return {
+        settings: {
+          upiId: 'mayurtrading@upi',
+          qrUrl: '',
+          adminPin: 'MAYUR@786'
+        },
+        users: {},
+        deposits: [],
+        messages: []
+      };
     }
 
-    function setStore(key, val) {
+    function saveLocalBackup() {
       try {
-        localStorage.setItem(key, JSON.stringify(val));
+        localStorage.setItem(LOCAL_STORE_KEY, JSON.stringify(appState));
       } catch (e) {}
     }
 
-    function getSettings() {
-      return getStore(STORAGE_KEYS.SETTINGS, {
-        upiId: 'mayurtrading@upi',
-        qrUrl: '',
-        adminPin: 'MAYUR@786'
-      });
+    // Live Cloud + Local State
+    let cloudDb = null;
+    let cloudReady = false;
+    let currentFilter = 'all';
+    let generatedOtp = null;
+    let activeSessionPhone = null;
+    let appState = loadLocalBackup();
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'mayur-trading-live';
+
+    async function initCloudSync() {
+      try {
+        if (typeof __firebase_config === 'undefined' || !__firebase_config) return;
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        cloudDb = getFirestore(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        if (!auth.currentUser) return;
+        cloudReady = true;
+
+        // 1. Real-time listener for Daily UPI ID, QR Code & Admin PIN
+        const settingsDocRef = doc(cloudDb, 'artifacts', appId, 'public', 'data', 'config', 'main');
+        onSnapshot(settingsDocRef, (snap) => {
+          if (snap.exists()) {
+            appState.settings = { ...appState.settings, ...snap.data() };
+            saveLocalBackup();
+            syncLiveUpiDisplay();
+          }
+        }, () => {});
+
+        // 2. Real-time listener for all Registered Users & Wallets
+        const usersColRef = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'users');
+        onSnapshot(usersColRef, (snap) => {
+          snap.forEach(d => {
+            const data = d.data();
+            if (data.activePlansJson) {
+              try { data.activePlans = JSON.parse(data.activePlansJson); } catch (e) { data.activePlans = []; }
+            }
+            appState.users[d.id] = data;
+          });
+          saveLocalBackup();
+          if (activeSessionPhone && appState.users[activeSessionPhone]) {
+            refreshUI();
+          }
+        }, () => {});
+
+        // 3. Real-time listener for UPI UTR Deposit Requests
+        const depColRef = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'deposits');
+        onSnapshot(depColRef, (snap) => {
+          if (!snap.empty) {
+            const list = [];
+            snap.forEach(d => list.push(d.data()));
+            list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            appState.deposits = list;
+            saveLocalBackup();
+            if (!document.getElementById('modal-recharge').classList.contains('hidden')) renderUserRechargeHistory();
+            if (!document.getElementById('modal-admin').classList.contains('hidden')) renderAdminUtrList();
+          }
+        }, () => {});
+
+        // 4. Real-time listener for Support Messages
+        const msgColRef = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'messages');
+        onSnapshot(msgColRef, (snap) => {
+          if (!snap.empty) {
+            const list = [];
+            snap.forEach(d => list.push(d.data()));
+            list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            appState.messages = list;
+            saveLocalBackup();
+            if (!document.getElementById('modal-support').classList.contains('hidden')) renderUserSupportThread();
+            if (!document.getElementById('modal-admin').classList.contains('hidden')) renderAdminMessages();
+          }
+        }, () => {});
+      } catch (e) {}
     }
 
-    function showToast(msg) {
+    async function persistSettings() {
+      saveLocalBackup();
+      if (!cloudReady || !cloudDb) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'config', 'main'), appState.settings);
+      } catch (e) {}
+    }
+
+    async function persistUser(userObj) {
+      appState.users[userObj.phone] = userObj;
+      saveLocalBackup();
+      if (!cloudReady || !cloudDb) return;
+      try {
+        const payload = {
+          ...userObj,
+          activePlansJson: JSON.stringify(userObj.activePlans || [])
+        };
+        delete payload.activePlans;
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'users', userObj.phone), payload);
+      } catch (e) {}
+    }
+
+    async function persistDeposit(depObj) {
+      saveLocalBackup();
+      if (!cloudReady || !cloudDb) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'deposits', depObj.id), depObj);
+      } catch (e) {}
+    }
+
+    async function persistMessage(msgObj) {
+      saveLocalBackup();
+      if (!cloudReady || !cloudDb) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'messages', msgObj.id), msgObj);
+      } catch (e) {}
+    }
+
+    function syncLiveUpiDisplay() {
+      const settings = appState.settings;
+      const upiEl = document.getElementById('live-upi-id-text');
+      const qrImg = document.getElementById('live-upi-qr-img');
+      if (upiEl) upiEl.textContent = settings.upiId;
+      if (qrImg) {
+        if (settings.qrUrl && settings.qrUrl.trim()) {
+          qrImg.src = settings.qrUrl.trim();
+        } else {
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('upi://pay?pa=' + settings.upiId + '&pn=MayurTrading')}`;
+        }
+      }
+    }
+
+    window.showToast = function (msg) {
       const box = document.getElementById('toast-box');
       box.textContent = msg;
       box.classList.remove('hidden');
       clearTimeout(window.__toastTimer);
       window.__toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
-    }
+    };
 
-    function openModal(id) {
+    window.openModal = function (id) {
       document.getElementById(id).classList.remove('hidden');
-    }
+    };
 
-    function closeModal(id) {
+    window.closeModal = function (id) {
       document.getElementById(id).classList.add('hidden');
-    }
+    };
 
     // AUTHENTICATION TABS & HANDLERS
-    function switchAuthTab(tab) {
+    window.switchAuthTab = function (tab) {
       ['login', 'register', 'otp'].forEach(t => {
         document.getElementById('form-' + t).classList.toggle('hidden', t !== tab);
         const btn = document.getElementById('tab-' + t);
@@ -838,9 +980,9 @@
           btn.className = 'py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-mayur-red transition';
         }
       });
-    }
+    };
 
-    function handleRegisterSubmit(e) {
+    window.handleRegisterSubmit = async function (e) {
       e.preventDefault();
       const name = document.getElementById('reg-name').value.trim();
       const phone = document.getElementById('reg-phone').value.trim();
@@ -852,14 +994,13 @@
         return;
       }
 
-      const users = getStore(STORAGE_KEYS.USERS, {});
-      if (users[phone]) {
+      if (appState.users[phone]) {
         showToast('Mobile number already registered. Please Login.');
         switchAuthTab('login');
         return;
       }
 
-      users[phone] = {
+      const newUser = {
         id: 'MT-' + Math.floor(1000 + Math.random() * 9000),
         name,
         phone,
@@ -872,43 +1013,41 @@
         bank: null,
         lastSpinDate: ''
       };
-      setStore(STORAGE_KEYS.USERS, users);
-      setStore(STORAGE_KEYS.SESSION, phone);
+      await persistUser(newUser);
+      activeSessionPhone = phone;
       showToast('Account created successfully! Welcome to Mayur Trading.');
       enterPortal();
-    }
+    };
 
-    function handleLoginSubmit(e) {
+    window.handleLoginSubmit = function (e) {
       e.preventDefault();
       const phone = document.getElementById('login-phone').value.trim();
       const pass = document.getElementById('login-pass').value;
-      const users = getStore(STORAGE_KEYS.USERS, {});
 
-      if (!users[phone]) {
+      if (!appState.users[phone]) {
         showToast('Account not found. Please Register first.');
         switchAuthTab('register');
         document.getElementById('reg-phone').value = phone;
         return;
       }
 
-      if (users[phone].pass !== pass) {
+      if (appState.users[phone].pass !== pass) {
         showToast('Incorrect password. Use OTP Reset if forgotten.');
         return;
       }
 
-      setStore(STORAGE_KEYS.SESSION, phone);
+      activeSessionPhone = phone;
       showToast('Login successful!');
       enterPortal();
-    }
+    };
 
-    function sendMockOtp() {
+    window.sendMockOtp = function () {
       const phone = document.getElementById('otp-phone').value.trim();
-      const users = getStore(STORAGE_KEYS.USERS, {});
       if (!/^\d{10}$/.test(phone)) {
         showToast('Enter a valid 10-digit mobile number.');
         return;
       }
-      if (!users[phone]) {
+      if (!appState.users[phone]) {
         showToast('This mobile number is not registered.');
         return;
       }
@@ -916,16 +1055,15 @@
       document.getElementById('otp-generated-code').textContent = generatedOtp;
       document.getElementById('otp-display-box').classList.remove('hidden');
       showToast('6-Digit OTP generated on screen!');
-    }
+    };
 
-    function handleOtpReset(e) {
+    window.handleOtpReset = async function (e) {
       e.preventDefault();
       const phone = document.getElementById('otp-phone').value.trim();
       const code = document.getElementById('otp-code').value.trim();
       const newPass = document.getElementById('otp-newpass').value;
-      const users = getStore(STORAGE_KEYS.USERS, {});
 
-      if (!users[phone]) {
+      if (!appState.users[phone]) {
         showToast('Mobile number not found.');
         return;
       }
@@ -934,32 +1072,24 @@
         return;
       }
 
-      users[phone].pass = newPass;
-      setStore(STORAGE_KEYS.USERS, users);
+      appState.users[phone].pass = newPass;
+      await persistUser(appState.users[phone]);
       generatedOtp = null;
       document.getElementById('otp-display-box').classList.add('hidden');
       showToast('Password reset successful! Please sign in.');
       switchAuthTab('login');
-    }
+    };
 
-    function handleLogout() {
-      localStorage.removeItem(STORAGE_KEYS.SESSION);
+    window.handleLogout = function () {
+      activeSessionPhone = null;
       document.getElementById('app-shell').classList.add('hidden');
       document.getElementById('auth-gate').classList.remove('hidden');
       showToast('Logged out securely.');
-    }
+    };
 
     function getCurrentUser() {
-      const phone = getStore(STORAGE_KEYS.SESSION, null);
-      if (!phone) return null;
-      const users = getStore(STORAGE_KEYS.USERS, {});
-      return users[phone] || null;
-    }
-
-    function saveCurrentUser(userObj) {
-      const users = getStore(STORAGE_KEYS.USERS, {});
-      users[userObj.phone] = userObj;
-      setStore(STORAGE_KEYS.USERS, users);
+      if (!activeSessionPhone) return null;
+      return appState.users[activeSessionPhone] || null;
     }
 
     function enterPortal() {
@@ -974,9 +1104,9 @@
       const user = getCurrentUser();
       if (!user) return;
 
-      document.getElementById('top-mini-bal').textContent = user.balance.toLocaleString('en-IN');
-      document.getElementById('inc-wallet-bal').textContent = user.balance.toLocaleString('en-IN');
-      document.getElementById('prof-wallet-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('top-mini-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
+      document.getElementById('inc-wallet-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
+      document.getElementById('prof-wallet-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
 
       document.getElementById('prof-user-name').textContent = user.name;
       document.getElementById('prof-user-phone').textContent = '+91 ' + user.phone;
@@ -989,8 +1119,9 @@
         document.getElementById('prof-bank-status').textContent = 'Not Linked';
       }
 
-      const dailyEst = user.activePlans.reduce((sum, p) => sum + p.daily, 0);
-      document.getElementById('inc-active-count').textContent = user.activePlans.length;
+      const activeList = user.activePlans || [];
+      const dailyEst = activeList.reduce((sum, p) => sum + p.daily, 0);
+      document.getElementById('inc-active-count').textContent = activeList.length;
       document.getElementById('inc-daily-est').textContent = dailyEst.toLocaleString('en-IN');
       document.getElementById('inc-total-earned').textContent = (user.totalEarned || 0).toLocaleString('en-IN');
 
@@ -999,7 +1130,7 @@
     }
 
     // MAIN NAVIGATION TABS
-    function switchMainTab(tab) {
+    window.switchMainTab = function (tab) {
       ['home', 'income', 'team', 'profile'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('hidden', t !== tab);
         const navBtn = document.getElementById('nav-' + t);
@@ -1010,10 +1141,10 @@
         }
       });
       refreshUI();
-    }
+    };
 
     // RENDER PRODUCT PLANS
-    function filterPlans(cat) {
+    window.filterPlans = function (cat) {
       currentFilter = cat;
       ['all', 'normal', 'welfare', 'vip', 'special'].forEach(c => {
         const btn = document.getElementById('cat-' + c);
@@ -1024,7 +1155,7 @@
         }
       });
       renderPlans();
-    }
+    };
 
     function renderPlans() {
       const list = document.getElementById('plans-list');
@@ -1074,31 +1205,33 @@
       `).join('');
     }
 
-    function buyProductPlan(planId) {
+    window.buyProductPlan = async function (planId) {
       const user = getCurrentUser();
       const plan = PRODUCT_PLANS.find(p => p.id === planId);
       if (!user || !plan) return;
 
-      if (user.balance < plan.price) {
-        showToast(`Insufficient wallet balance (₹${user.balance}). Please Recharge ₹${plan.price - user.balance} more.`);
+      if ((user.balance || 0) < plan.price) {
+        showToast(`Insufficient wallet balance (₹${user.balance || 0}). Please Recharge ₹${plan.price - (user.balance || 0)} more.`);
         openRechargeModal(plan.price);
         return;
       }
 
       user.balance -= plan.price;
+      user.activePlans = user.activePlans || [];
       user.activePlans.push({
         ...plan,
         purchasedAt: new Date().toLocaleDateString('en-IN')
       });
-      saveCurrentUser(user);
+      await persistUser(user);
       refreshUI();
       showToast(`Activated ${plan.name}! View it in Income tab.`);
-    }
+    };
 
     function renderActivePlans() {
       const user = getCurrentUser();
       const container = document.getElementById('active-plans-container');
-      if (!user || user.activePlans.length === 0) {
+      const activeList = user ? (user.activePlans || []) : [];
+      if (activeList.length === 0) {
         container.innerHTML = `
           <div class="bg-white rounded-3xl p-6 text-center border border-rose-100">
             <i class="fa-solid fa-box-open text-2xl text-slate-300 mb-2"></i>
@@ -1107,7 +1240,7 @@
         return;
       }
 
-      container.innerHTML = user.activePlans.map(p => `
+      container.innerHTML = activeList.map(p => `
         <div class="bg-white rounded-2xl p-3.5 border border-rose-100 flex items-center justify-between">
           <div>
             <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Active • ${p.purchasedAt}</span>
@@ -1119,42 +1252,36 @@
       `).join('');
     }
 
-    function claimDailyYield() {
+    window.claimDailyYield = async function () {
       const user = getCurrentUser();
-      if (!user || user.activePlans.length === 0) {
+      const activeList = user ? (user.activePlans || []) : [];
+      if (!user || activeList.length === 0) {
         showToast('Activate at least one product plan to collect daily yield.');
         return;
       }
-      const dailyTotal = user.activePlans.reduce((sum, p) => sum + p.daily, 0);
-      user.balance += dailyTotal;
+      const dailyTotal = activeList.reduce((sum, p) => sum + p.daily, 0);
+      user.balance = (user.balance || 0) + dailyTotal;
       user.totalEarned = (user.totalEarned || 0) + dailyTotal;
-      saveCurrentUser(user);
+      await persistUser(user);
       refreshUI();
       showToast(`₹${dailyTotal.toLocaleString('en-IN')} added to your wallet!`);
-    }
+    };
 
     // UPI RECHARGE & ADMIN APPROVAL
-    function openRechargeModal(prefillAmount) {
-      const settings = getSettings();
-      document.getElementById('live-upi-id-text').textContent = settings.upiId;
-      const qrImg = document.getElementById('live-upi-qr-img');
-      if (settings.qrUrl && settings.qrUrl.trim()) {
-        qrImg.src = settings.qrUrl.trim();
-      } else {
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('upi://pay?pa=' + settings.upiId + '&pn=MayurTrading')}`;
-      }
+    window.openRechargeModal = function (prefillAmount) {
+      syncLiveUpiDisplay();
       if (prefillAmount) {
         document.getElementById('rech-amount').value = prefillAmount;
       }
       renderUserRechargeHistory();
       openModal('modal-recharge');
-    }
+    };
 
-    function setRechargeAmount(amt) {
+    window.setRechargeAmount = function (amt) {
       document.getElementById('rech-amount').value = amt;
-    }
+    };
 
-    function copyUpiId() {
+    window.copyUpiId = function () {
       const text = document.getElementById('live-upi-id-text').textContent;
       const temp = document.createElement('textarea');
       temp.value = text;
@@ -1163,9 +1290,9 @@
       document.execCommand('copy');
       document.body.removeChild(temp);
       showToast('UPI ID copied: ' + text);
-    }
+    };
 
-    function submitUtrDeposit(e) {
+    window.submitUtrDeposit = async function (e) {
       e.preventDefault();
       const user = getCurrentUser();
       const amount = Number(document.getElementById('rech-amount').value);
@@ -1176,25 +1303,26 @@
         return;
       }
 
-      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []);
-      deposits.unshift({
+      const newDep = {
         id: 'DEP-' + Date.now(),
         phone: user.phone,
         userName: user.name,
         amount,
         utr,
         status: 'Pending',
+        createdAt: Date.now(),
         time: new Date().toLocaleString('en-IN')
-      });
-      setStore(STORAGE_KEYS.DEPOSITS, deposits);
+      };
+      appState.deposits.unshift(newDep);
+      await persistDeposit(newDep);
       document.getElementById('rech-utr').value = '';
       renderUserRechargeHistory();
       showToast('UTR submitted! Admin will approve shortly.');
-    }
+    };
 
     function renderUserRechargeHistory() {
       const user = getCurrentUser();
-      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []).filter(d => d.phone === user.phone);
+      const deposits = appState.deposits.filter(d => d.phone === user.phone);
       const box = document.getElementById('user-recharge-history');
 
       if (deposits.length === 0) {
@@ -1214,7 +1342,7 @@
     }
 
     // BANK ACCOUNT & WITHDRAWAL
-    function openBankModal() {
+    window.openBankModal = function () {
       const user = getCurrentUser();
       if (user && user.bank) {
         document.getElementById('bank-holder').value = user.bank.holder;
@@ -1222,9 +1350,9 @@
         document.getElementById('bank-ifsc').value = user.bank.ifsc;
       }
       openModal('modal-bank');
-    }
+    };
 
-    function saveBankDetails(e) {
+    window.saveBankDetails = async function (e) {
       e.preventDefault();
       const user = getCurrentUser();
       user.bank = {
@@ -1232,13 +1360,13 @@
         acc: document.getElementById('bank-acc').value.trim(),
         ifsc: document.getElementById('bank-ifsc').value.trim().toUpperCase()
       };
-      saveCurrentUser(user);
+      await persistUser(user);
       refreshUI();
       closeModal('modal-bank');
       showToast('Bank Account & IFSC saved successfully!');
-    }
+    };
 
-    function handleWithdrawClick() {
+    window.handleWithdrawClick = function () {
       const user = getCurrentUser();
       if (!user) return;
 
@@ -1248,12 +1376,12 @@
         return;
       }
 
-      document.getElementById('wd-avail-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('wd-avail-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
       document.getElementById('wd-bank-summary').textContent = `A/C: ${user.bank.acc} | IFSC: ${user.bank.ifsc}`;
       openModal('modal-withdraw');
-    }
+    };
 
-    function submitWithdrawal(e) {
+    window.submitWithdrawal = async function (e) {
       e.preventDefault();
       const user = getCurrentUser();
       const amt = Number(document.getElementById('wd-amount').value);
@@ -1262,20 +1390,20 @@
         showToast('Minimum withdrawal amount is ₹200.');
         return;
       }
-      if (amt > user.balance) {
+      if (amt > (user.balance || 0)) {
         showToast('Insufficient wallet balance.');
         return;
       }
 
       user.balance -= amt;
-      saveCurrentUser(user);
+      await persistUser(user);
       refreshUI();
       closeModal('modal-withdraw');
       showToast(`Withdrawal request of ₹${amt.toLocaleString('en-IN')} submitted to ${user.bank.acc}!`);
-    }
+    };
 
     // LUCKY SPIN & REFERRAL
-    function triggerLuckySpin() {
+    window.triggerLuckySpin = function () {
       const user = getCurrentUser();
       const today = new Date().toDateString();
       if (user.lastSpinDate === today) {
@@ -1287,21 +1415,21 @@
       disc.classList.add('wheel-spinning');
       document.getElementById('btn-spin-now').disabled = true;
 
-      setTimeout(() => {
+      setTimeout(async () => {
         disc.classList.remove('wheel-spinning');
         document.getElementById('btn-spin-now').disabled = false;
         const rewards = [15, 25, 50, 75, 100];
         const won = rewards[Math.floor(Math.random() * rewards.length)];
-        user.balance += won;
+        user.balance = (user.balance || 0) + won;
         user.lastSpinDate = today;
-        saveCurrentUser(user);
+        await persistUser(user);
         refreshUI();
         closeModal('modal-spin');
         showToast(`Congratulations! You won ₹${won} Lucky Spin bonus!`);
       }, 3200);
-    }
+    };
 
-    function copyReferralCode() {
+    window.copyReferralCode = function () {
       const code = document.getElementById('team-ref-code').textContent;
       const temp = document.createElement('textarea');
       temp.value = code;
@@ -1310,39 +1438,40 @@
       document.execCommand('copy');
       document.body.removeChild(temp);
       showToast('Referral code copied: ' + code);
-    }
+    };
 
     // SUPPORT CHAT BOX
-    function openSupportModal() {
+    window.openSupportModal = function () {
       renderUserSupportThread();
       openModal('modal-support');
-    }
+    };
 
-    function sendSupportMessage(e) {
+    window.sendSupportMessage = async function (e) {
       e.preventDefault();
       const user = getCurrentUser();
       const input = document.getElementById('support-msg-input');
       const text = input.value.trim();
       if (!text) return;
 
-      const msgs = getStore(STORAGE_KEYS.MESSAGES, []);
-      msgs.push({
+      const msgObj = {
         id: 'MSG-' + Date.now(),
         phone: user.phone,
         userName: user.name,
         text,
         reply: '',
+        createdAt: Date.now(),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-      });
-      setStore(STORAGE_KEYS.MESSAGES, msgs);
+      };
+      appState.messages.push(msgObj);
+      await persistMessage(msgObj);
       input.value = '';
       renderUserSupportThread();
       showToast('Message sent to Admin!');
-    }
+    };
 
     function renderUserSupportThread() {
       const user = getCurrentUser();
-      const msgs = getStore(STORAGE_KEYS.MESSAGES, []).filter(m => m.phone === user.phone);
+      const msgs = appState.messages.filter(m => m.phone === user.phone);
       const box = document.getElementById('user-support-thread');
 
       if (msgs.length === 0) {
@@ -1367,50 +1496,47 @@
     }
 
     // ADMIN PIN GATE & CONTROL PANEL
-    function openAdminGate() {
+    window.openAdminGate = function () {
       document.getElementById('admin-pin-input').value = '';
       openModal('modal-admin-pin');
-    }
+    };
 
-    function verifyAdminPin(e) {
+    window.verifyAdminPin = function (e) {
       e.preventDefault();
       const entered = document.getElementById('admin-pin-input').value.trim();
-      const settings = getSettings();
-      if (entered !== settings.adminPin) {
+      if (entered !== appState.settings.adminPin) {
         showToast('Incorrect Admin Secret PIN!');
         return;
       }
       closeModal('modal-admin-pin');
       openAdminPanel();
-    }
+    };
 
-    function openAdminPanel() {
-      const settings = getSettings();
-      document.getElementById('admin-upi-input').value = settings.upiId;
-      document.getElementById('admin-qr-input').value = settings.qrUrl || '';
+    window.openAdminPanel = function () {
+      document.getElementById('admin-upi-input').value = appState.settings.upiId;
+      document.getElementById('admin-qr-input').value = appState.settings.qrUrl || '';
       renderAdminUtrList();
       renderAdminMessages();
       openModal('modal-admin');
-    }
+    };
 
-    function saveAdminUpiSettings(e) {
+    window.saveAdminUpiSettings = async function (e) {
       e.preventDefault();
-      const settings = getSettings();
-      settings.upiId = document.getElementById('admin-upi-input').value.trim();
-      settings.qrUrl = document.getElementById('admin-qr-input').value.trim();
-      setStore(STORAGE_KEYS.SETTINGS, settings);
+      appState.settings.upiId = document.getElementById('admin-upi-input').value.trim();
+      appState.settings.qrUrl = document.getElementById('admin-qr-input').value.trim();
+      syncLiveUpiDisplay();
+      await persistSettings();
       showToast('Live UPI ID & QR Code updated for all users!');
-    }
+    };
 
     function renderAdminUtrList() {
-      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []);
       const box = document.getElementById('admin-utr-list');
-      if (deposits.length === 0) {
+      if (appState.deposits.length === 0) {
         box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No UPI recharge requests yet.</p>';
         return;
       }
 
-      box.innerHTML = deposits.map(d => `
+      box.innerHTML = appState.deposits.map(d => `
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
           <div>
             <p class="font-extrabold text-slate-800">${d.userName} (${d.phone})</p>
@@ -1423,35 +1549,32 @@
       `).join('');
     }
 
-    function approveDeposit(depId) {
-      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []);
-      const idx = deposits.findIndex(d => d.id === depId);
-      if (idx === -1 || deposits[idx].status === 'Approved') return;
+    window.approveDeposit = async function (depId) {
+      const idx = appState.deposits.findIndex(d => d.id === depId);
+      if (idx === -1 || appState.deposits[idx].status === 'Approved') return;
 
-      deposits[idx].status = 'Approved';
-      setStore(STORAGE_KEYS.DEPOSITS, deposits);
+      appState.deposits[idx].status = 'Approved';
+      await persistDeposit(appState.deposits[idx]);
 
-      const users = getStore(STORAGE_KEYS.USERS, {});
-      const targetPhone = deposits[idx].phone;
-      if (users[targetPhone]) {
-        users[targetPhone].balance += deposits[idx].amount;
-        setStore(STORAGE_KEYS.USERS, users);
+      const targetPhone = appState.deposits[idx].phone;
+      if (appState.users[targetPhone]) {
+        appState.users[targetPhone].balance = (appState.users[targetPhone].balance || 0) + appState.deposits[idx].amount;
+        await persistUser(appState.users[targetPhone]);
       }
 
       renderAdminUtrList();
       refreshUI();
-      showToast(`Approved ₹${deposits[idx].amount} for ${deposits[idx].userName}!`);
-    }
+      showToast(`Approved ₹${appState.deposits[idx].amount} for ${appState.deposits[idx].userName}!`);
+    };
 
     function renderAdminMessages() {
-      const msgs = getStore(STORAGE_KEYS.MESSAGES, []);
       const box = document.getElementById('admin-messages-list');
-      if (msgs.length === 0) {
+      if (appState.messages.length === 0) {
         box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No user messages in inbox.</p>';
         return;
       }
 
-      box.innerHTML = msgs.slice().reverse().map(m => `
+      box.innerHTML = appState.messages.slice().reverse().map(m => `
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
           <div class="flex justify-between text-[10px] font-bold text-slate-500">
             <span>${m.userName} (+91 ${m.phone})</span>
@@ -1466,33 +1589,30 @@
       `).join('');
     }
 
-    function sendAdminReply(msgId) {
-      const msgs = getStore(STORAGE_KEYS.MESSAGES, []);
-      const idx = msgs.findIndex(m => m.id === msgId);
+    window.sendAdminReply = async function (msgId) {
+      const idx = appState.messages.findIndex(m => m.id === msgId);
       if (idx === -1) return;
       const val = document.getElementById('reply-input-' + msgId).value.trim();
-      msgs[idx].reply = val;
-      setStore(STORAGE_KEYS.MESSAGES, msgs);
+      appState.messages[idx].reply = val;
+      await persistMessage(appState.messages[idx]);
       showToast('Reply sent to user!');
-    }
+    };
 
-    function updateAdminPin() {
+    window.updateAdminPin = async function () {
       const newPin = document.getElementById('admin-new-pin').value.trim();
       if (newPin.length < 4) {
         showToast('New PIN must be at least 4 characters.');
         return;
       }
-      const settings = getSettings();
-      settings.adminPin = newPin;
-      setStore(STORAGE_KEYS.SETTINGS, settings);
+      appState.settings.adminPin = newPin;
+      await persistSettings();
       document.getElementById('admin-new-pin').value = '';
       showToast('Secret Admin PIN updated to: ' + newPin);
-    }
+    };
 
     window.onload = function () {
-      if (getCurrentUser()) {
-        enterPortal();
-      }
+      syncLiveUpiDisplay();
+      initCloudSync();
     };
   </script>
 </body>
