@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mayur Trading Company | Official Member & Product Portal</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Cinzel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Cinzel"', 'serif'],
+          },
+          colors: {
+            mayur: {
+              red: '#D90429',
+              crimson: '#9B001C',
+              dark: '#4A000D',
+              gold: '#D4AF37',
+              goldLight: '#F3D06B',
+              blush: '#FDF7F7',
+              blushCard: '#FFF5F6',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body {
+      background-color: #EFE6E7;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #2B090E;
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #FCE38A 0%, #D4AF37 50%, #AA7C11 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .royal-header-bg {
+      background: radial-gradient(circle at 85% 15%, #D90429 0%, #8B0000 55%, #4A000D 100%);
+    }
+    .gold-btn {
+      background: linear-gradient(135deg, #F3D06B 0%, #D4AF37 55%, #B8860B 100%);
+      color: #3A000A;
+    }
+    .crimson-btn {
+      background: linear-gradient(90deg, #E60023 0%, #B8001C 100%);
+      box-shadow: 0 6px 16px rgba(217, 4, 41, 0.28);
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes spinWheel {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(1800deg); }
+    }
+    .wheel-spinning {
+      animation: spinWheel 3.2s cubic-bezier(0.17, 0.67, 0.12, 0.99) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center">
+
+  <!-- ========================================================= -->
+  <!-- 1. STRICT PRE-LOGIN AUTHENTICATION GATE                   -->
+  <!-- ========================================================= -->
+  <div id="auth-gate" class="w-full max-w-[460px] min-h-screen bg-[#FDF7F7] shadow-2xl flex flex-col justify-between relative overflow-hidden">
+    <!-- Top Royal Branding Banner -->
+    <div class="royal-header-bg pt-10 pb-14 px-6 rounded-b-[38px] text-center relative shadow-xl border-b-2 border-mayur-gold/60">
+      <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#F9E29C] via-[#D4AF37] to-[#8C6214] p-0.5 shadow-lg mb-3">
+        <div class="w-full h-full rounded-2xl bg-[#4A000D] flex items-center justify-center">
+          <svg viewBox="0 0 64 64" class="w-12 h-12">
+            <defs>
+              <linearGradient id="peacockGold" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#FFF2B2"/>
+                <stop offset="50%" stop-color="#D4AF37"/>
+                <stop offset="100%" stop-color="#9A6B12"/>
+              </linearGradient>
+            </defs>
+            <path d="M32 10 C27 10 25 15 28 19 C30 22 25 27 25 34 C25 42 31 48 39 48 C46 48 51 42 51 35 C51 28 45 24 40 26 C37 27 35 23 36 19 C37 15 35 10 32 10 Z" fill="url(#peacockGold)"/>
+            <circle cx="30" cy="14" r="1.4" fill="#4A000D"/>
+            <path d="M27 13 L22 14 L27 15.5 Z" fill="#F3D06B"/>
+            <path d="M16 44 Q24 54 44 52 Q52 46 53 38" fill="none" stroke="url(#peacockGold)" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="17" cy="42" r="2.5" fill="#F3D06B"/>
+            <circle cx="24" cy="49" r="2.5" fill="#F3D06B"/>
+            <circle cx="34" cy="52" r="2.5" fill="#F3D06B"/>
+            <circle cx="44" cy="50" r="2.5" fill="#F3D06B"/>
+          </svg>
+        </div>
+      </div>
+      <h1 class="font-display text-2xl font-black tracking-wider gold-gradient-text">MAYUR TRADING</h1>
+      <p class="text-[11px] font-bold tracking-[0.26em] text-amber-200/90 uppercase mt-0.5">COMPANY • EST. INDIA</p>
+      <p class="text-xs text-rose-100/80 mt-3 max-w-xs mx-auto">Secure Member Portal — Sign in or create an account to view exclusive trading product plans.</p>
+    </div>
+
+    <!-- Auth Card Container -->
+    <div class="px-5 -mt-8 z-10 flex-1">
+      <div class="bg-white rounded-3xl shadow-xl border border-rose-100 p-5">
+        <div class="grid grid-cols-3 gap-1 bg-rose-50 p-1 rounded-2xl mb-5">
+          <button type="button" id="tab-login" onclick="switchAuthTab('login')" class="py-2 rounded-xl text-xs font-extrabold bg-mayur-red text-white shadow-sm transition">Login</button>
+          <button type="button" id="tab-register" onclick="switchAuthTab('register')" class="py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-mayur-red transition">Register</button>
+          <button type="button" id="tab-otp" onclick="switchAuthTab('otp')" class="py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-mayur-red transition">OTP Reset</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-3.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Registered Mobile Number</label>
+            <div class="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus-within:border-mayur-red focus-within:bg-white">
+              <span class="text-xs font-extrabold text-mayur-red pr-2 border-r border-slate-200">+91</span>
+              <input id="login-phone" type="tel" maxlength="10" required placeholder="Enter 10-digit mobile number" class="w-full pl-2.5 text-sm font-semibold bg-transparent outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Account Password</label>
+            <div class="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus-within:border-mayur-red focus-within:bg-white">
+              <i class="fa-solid fa-lock text-slate-400 text-xs mr-2.5"></i>
+              <input id="login-pass" type="password" required placeholder="Enter your password" class="w-full text-sm font-semibold bg-transparent outline-none" />
+            </div>
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-2xl crimson-btn text-white font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 mt-2 active:scale-98 transition">
+            <span>Sign In to Member Portal</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="form-register" onsubmit="handleRegisterSubmit(event)" class="space-y-3 hidden">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Full Name</label>
+            <input id="reg-name" type="text" required placeholder="Enter your full name" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-slate-50 focus:border-mayur-red focus:bg-white outline-none" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Mobile Number</label>
+            <div class="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus-within:border-mayur-red focus-within:bg-white">
+              <span class="text-xs font-extrabold text-mayur-red pr-2 border-r border-slate-200">+91</span>
+              <input id="reg-phone" type="tel" maxlength="10" required placeholder="10-digit mobile number" class="w-full pl-2.5 text-sm font-semibold bg-transparent outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Create Password</label>
+            <input id="reg-pass" type="password" required minlength="6" placeholder="Minimum 6 characters" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-slate-50 focus:border-mayur-red focus:bg-white outline-none" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Referral / Invitation Code (Optional)</label>
+            <input id="reg-ref" type="text" placeholder="e.g. MAYUR10 (10% Bonus on First Plan)" class="w-full border border-amber-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-amber-50/50 focus:border-mayur-gold outline-none" />
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-2xl gold-btn font-extrabold text-sm tracking-wide shadow-md flex items-center justify-center gap-2 mt-1 active:scale-98 transition">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Create Free Account</span>
+          </button>
+        </form>
+
+        <!-- OTP RESET FORM -->
+        <form id="form-otp" onsubmit="handleOtpReset(event)" class="space-y-3 hidden">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Registered Mobile Number</label>
+            <div class="flex gap-2">
+              <input id="otp-phone" type="tel" maxlength="10" required placeholder="10-digit mobile" class="flex-1 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-slate-50 outline-none" />
+              <button type="button" onclick="sendMockOtp()" class="px-3.5 py-2.5 rounded-xl bg-mayur-dark text-amber-300 text-xs font-bold whitespace-nowrap">Send OTP</button>
+            </div>
+            <div id="otp-display-box" class="hidden mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-center">
+              <p class="text-[11px] text-amber-800 font-semibold">Your 6-Digit Verification OTP:</p>
+              <p id="otp-generated-code" class="text-lg font-black tracking-[0.25em] text-mayur-red mt-0.5">------</p>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">6-Digit Verification OTP</label>
+            <input id="otp-code" type="text" maxlength="6" required placeholder="Enter 6-digit OTP" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-slate-50 outline-none" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">New Password</label>
+            <input id="otp-newpass" type="password" required minlength="6" placeholder="Enter new password" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-slate-50 outline-none" />
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-2xl crimson-btn text-white font-extrabold text-sm">Verify OTP & Reset Password</button>
+        </form>
+
+        <!-- Official Telegram Channel Link -->
+        <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+          <span class="text-slate-500 font-medium">Official Updates & Help:</span>
+          <a href="https://t.me/parlegprogram" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 font-bold text-sky-600 hover:text-sky-700">
+            <i class="fa-brands fa-telegram text-base"></i>
+            <span>t.me/parlegprogram</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center py-5 px-4 text-[11px] text-slate-400">
+      <p class="font-semibold text-slate-500">256-Bit Encrypted • Mayur Trading Company Pvt. Ltd.</p>
+      <p class="mt-1 text-[10px] text-slate-500 leading-relaxed max-w-xs mx-auto">Disclaimer: We are product traders only and do not guarantee fixed returns. Please purchase plans at your own risk and exercise patience—everyone's funds remain safe.</p>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 2. MAIN AUTHENTICATED MEMBER APPLICATION SHELL            -->
+  <!-- ========================================================= -->
+  <div id="app-shell" class="hidden w-full max-w-[460px] min-h-screen bg-[#FDF7F7] shadow-2xl pb-28 relative">
+
+    <!-- Top Sticky Brand Bar -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-rose-100 px-4 py-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl royal-header-bg flex items-center justify-center border border-mayur-gold shadow-xs">
+          <i class="fa-solid fa-crown text-mayur-gold text-sm"></i>
+        </div>
+        <div>
+          <h2 class="font-display text-sm font-black text-mayur-dark leading-none">MAYUR TRADING</h2>
+          <span class="text-[10px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Verified Portal
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="https://t.me/parlegprogram" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center shadow-xs hover:bg-sky-600 transition" title="Official Telegram Channel">
+          <i class="fa-brands fa-telegram text-sm"></i>
+        </a>
+        <button onclick="openSupportModal()" class="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 text-mayur-red flex items-center justify-center shadow-xs hover:bg-rose-100 transition" title="Live Chat with Admin">
+          <i class="fa-solid fa-comments text-xs"></i>
+        </button>
+        <button onclick="openRechargeModal()" class="px-2.5 py-1.5 rounded-full bg-amber-50 border border-mayur-gold/60 text-xs font-extrabold text-mayur-dark flex items-center gap-1">
+          <i class="fa-solid fa-wallet text-mayur-red"></i>
+          <span>₹<span id="top-mini-bal">0</span></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===================================== -->
+    <!-- TAB 1: HOME (BANNER, ACTIONS, PLANS)  -->
+    <!-- ===================================== -->
+    <section id="view-home" class="px-3.5 pt-3 space-y-3.5">
+      <!-- Royal Hero Banner -->
+      <div class="royal-header-bg rounded-3xl p-4 text-white relative overflow-hidden shadow-lg border border-mayur-gold/50">
+        <div class="relative z-10 flex items-center justify-between gap-3">
+          <div class="space-y-1.5">
+            <span class="inline-block px-2.5 py-0.5 rounded-full bg-mayur-gold/20 border border-mayur-gold/50 text-[10px] font-extrabold text-amber-200 uppercase tracking-wider">Premium Product Trading</span>
+            <h3 class="font-display text-lg font-black leading-tight gold-gradient-text">MAYUR TRADING COMPANY</h3>
+            <p class="text-[11px] text-rose-100/90 leading-snug">Explore curated trading plans from ₹245 up to ₹45,000 with instant wallet tracking.</p>
+            <div class="pt-1 flex items-center gap-2">
+              <a href="https://t.me/parlegprogram" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500 text-white text-[11px] font-bold shadow-sm">
+                <i class="fa-brands fa-telegram"></i> Join Telegram Updates
+              </a>
+            </div>
+          </div>
+          <div class="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-xs border border-mayur-gold/40 flex flex-col items-center justify-center shrink-0">
+            <i class="fa-solid fa-gem text-2xl text-amber-300 mb-1"></i>
+            <span class="text-[9px] font-extrabold tracking-wider text-amber-200 uppercase">VIP CLUB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trading Disclaimer Notice -->
+      <div class="bg-amber-50 border border-amber-200/80 rounded-2xl px-3.5 py-2.5 flex items-start gap-2.5">
+        <i class="fa-solid fa-circle-info text-amber-600 text-xs mt-0.5 shrink-0"></i>
+        <p class="text-[11px] text-amber-900 leading-snug">
+          <span class="font-extrabold">Trading Notice:</span> We are product traders only and do not guarantee fixed returns. Please purchase plans at your own risk and exercise patience—everyone's funds remain safe.
+        </p>
+      </div>
+
+      <!-- Quick Action Bar -->
+      <div class="grid grid-cols-4 gap-2 bg-white p-3 rounded-3xl shadow-xs border border-rose-100">
+        <button onclick="openRechargeModal()" class="flex flex-col items-center gap-1.5 group">
+          <div class="w-11 h-11 rounded-2xl bg-rose-50 text-mayur-red flex items-center justify-center text-base group-active:scale-95 transition">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+          </div>
+          <span class="text-[11px] font-bold text-slate-700">Recharge</span>
+        </button>
+        <button onclick="handleWithdrawClick()" class="flex flex-col items-center gap-1.5 group">
+          <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-base group-active:scale-95 transition">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+          <span class="text-[11px] font-bold text-slate-700">Withdraw</span>
+        </button>
+        <button onclick="openModal('modal-spin')" class="flex flex-col items-center gap-1.5 group">
+          <div class="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-base group-active:scale-95 transition">
+            <i class="fa-solid fa-dharmachakra"></i>
+          </div>
+          <span class="text-[11px] font-bold text-slate-700">Lucky Spin</span>
+        </button>
+        <button onclick="openSupportModal()" class="flex flex-col items-center gap-1.5 group">
+          <div class="w-11 h-11 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-base group-active:scale-95 transition">
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          <span class="text-[11px] font-bold text-slate-700">Support</span>
+        </button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <button onclick="filterPlans('all')" id="cat-all" class="px-4 py-2 rounded-full text-xs font-extrabold bg-mayur-red text-white shadow-xs whitespace-nowrap">All Plans</button>
+        <button onclick="filterPlans('normal')" id="cat-normal" class="px-4 py-2 rounded-full text-xs font-bold bg-white text-slate-700 border border-rose-100 whitespace-nowrap">Normal Plans</button>
+        <button onclick="filterPlans('welfare')" id="cat-welfare" class="px-4 py-2 rounded-full text-xs font-bold bg-white text-slate-700 border border-rose-100 whitespace-nowrap">Welfare Plans</button>
+        <button onclick="filterPlans('vip')" id="cat-vip" class="px-4 py-2 rounded-full text-xs font-bold bg-white text-slate-700 border border-rose-100 whitespace-nowrap">VIP Plans</button>
+        <button onclick="filterPlans('special')" id="cat-special" class="px-4 py-2 rounded-full text-xs font-bold bg-white text-slate-700 border border-rose-100 whitespace-nowrap">Special ₹810</button>
+      </div>
+
+      <!-- Plans Container -->
+      <div id="plans-list" class="space-y-3"></div>
+    </section>
+
+    <!-- ===================================== -->
+    <!-- TAB 2: MY INCOME & ACTIVE PLANS       -->
+    <!-- ===================================== -->
+    <section id="view-income" class="hidden px-3.5 pt-3 space-y-3.5">
+      <div class="royal-header-bg rounded-3xl p-5 text-white shadow-lg border border-mayur-gold/40">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-amber-200/80">Available Wallet Balance</p>
+            <h3 class="text-3xl font-black mt-1">₹<span id="inc-wallet-bal">0</span></h3>
+          </div>
+          <button onclick="claimDailyYield()" class="px-4 py-2.5 rounded-2xl gold-btn text-xs font-extrabold shadow-md active:scale-95 transition">
+            <i class="fa-solid fa-coins mr-1"></i> Collect Daily Yield
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/15 text-center">
+          <div>
+            <p class="text-[10px] text-rose-100/75">Active Plans</p>
+            <p id="inc-active-count" class="text-sm font-extrabold mt-0.5">0</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-rose-100/75">Daily Est. Yield</p>
+            <p class="text-sm font-extrabold text-amber-300 mt-0.5">₹<span id="inc-daily-est">0</span></p>
+          </div>
+          <div>
+            <p class="text-[10px] text-rose-100/75">Total Earned</p>
+            <p class="text-sm font-extrabold text-emerald-300 mt-0.5">₹<span id="inc-total-earned">0</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between px-1">
+        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-600">My Active Trading Plans</h4>
+        <button onclick="switchMainTab('home')" class="text-xs font-bold text-mayur-red">+ Buy More Plans</button>
+      </div>
+
+      <div id="active-plans-container" class="space-y-3"></div>
+    </section>
+
+    <!-- ===================================== -->
+    <!-- TAB 3: TEAM & REFERRAL REWARDS        -->
+    <!-- ===================================== -->
+    <section id="view-team" class="hidden px-3.5 pt-3 space-y-3.5">
+      <div class="royal-header-bg rounded-3xl p-5 text-white shadow-lg border border-mayur-gold/50">
+        <span class="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-200 text-[10px] font-extrabold uppercase">Partner Program</span>
+        <h3 class="font-display text-lg font-black mt-2 gold-gradient-text">INVITE & EARN 10% COMMISSION</h3>
+        <p class="text-xs text-rose-100/85 mt-1">Share your unique invitation code with friends and earn instant 10% commission when they activate any product plan.</p>
+
+        <div class="mt-4 bg-white/10 border border-white/20 rounded-2xl p-3 flex items-center justify-between">
+          <div>
+            <p class="text-[10px] text-amber-200 uppercase font-bold">Your Referral Code</p>
+            <p id="team-ref-code" class="text-base font-black tracking-widest mt-0.5">MAYUR100</p>
+          </div>
+          <button onclick="copyReferralCode()" class="px-4 py-2 rounded-xl gold-btn text-xs font-extrabold shadow-sm active:scale-95 transition">
+            <i class="fa-regular fa-copy mr-1"></i> Copy Code
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-xs">
+          <p class="text-[11px] font-bold text-slate-500">Total Team Members</p>
+          <p class="text-xl font-black text-mayur-dark mt-1">0</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-xs">
+          <p class="text-[11px] font-bold text-slate-500">Referral Bonus Earned</p>
+          <p class="text-xl font-black text-emerald-600 mt-1">₹0</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-4 border border-rose-100 shadow-xs space-y-2.5">
+        <h4 class="text-xs font-extrabold uppercase text-slate-700">3-Level Commission Structure</h4>
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70">
+          <span class="text-xs font-bold text-slate-700">Level 1 (Direct Invite)</span>
+          <span class="text-xs font-black text-mayur-red">10% Instant Bonus</span>
+        </div>
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70">
+          <span class="text-xs font-bold text-slate-700">Level 2 (Team Invite)</span>
+          <span class="text-xs font-black text-amber-700">5% Bonus</span>
+        </div>
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+          <span class="text-xs font-bold text-slate-700">Level 3 (Network Invite)</span>
+          <span class="text-xs font-black text-slate-700">2% Bonus</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================== -->
+    <!-- TAB 4: PROFILE & ADMIN ACCESS         -->
+    <!-- ===================================== -->
+    <section id="view-profile" class="hidden px-3.5 pt-3 space-y-3.5">
+      <!-- Member Card -->
+      <div class="royal-header-bg rounded-3xl p-5 text-white shadow-lg border border-mayur-gold/50">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-14 h-14 rounded-2xl gold-btn flex items-center justify-center text-xl font-black shadow-md">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div>
+              <h3 id="prof-user-name" class="text-base font-extrabold">Member Name</h3>
+              <p id="prof-user-phone" class="text-xs text-amber-200 font-semibold mt-0.5">+91 XXXXXXXXXX</p>
+              <span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-white/15 text-[10px] font-bold">ID: <span id="prof-user-id">MT-1001</span></span>
+            </div>
+          </div>
+          <button onclick="openAdminGate()" class="px-3.5 py-2 rounded-xl gold-btn text-xs font-black shadow-md flex items-center gap-1.5 active:scale-95 transition">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Admin</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/15">
+          <div class="bg-white/10 rounded-2xl p-3">
+            <p class="text-[10px] text-rose-100/80 uppercase font-bold">Wallet Balance</p>
+            <p class="text-lg font-black text-amber-300 mt-0.5">₹<span id="prof-wallet-bal">0</span></p>
+          </div>
+          <div class="bg-white/10 rounded-2xl p-3">
+            <p class="text-[10px] text-rose-100/80 uppercase font-bold">Saved Bank</p>
+            <p id="prof-bank-status" class="text-xs font-extrabold text-white mt-1 truncate">Not Linked</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu List -->
+      <div class="bg-white rounded-3xl border border-rose-100 shadow-xs divide-y divide-slate-100 overflow-hidden">
+        <button onclick="openRechargeModal()" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-rose-50/40 transition text-left">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-rose-50 text-mayur-red flex items-center justify-center"><i class="fa-solid fa-qrcode"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-800">UPI Recharge & UTR History</p>
+              <p class="text-[10px] text-slate-500">Add funds via UPI QR & check approvals</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+        </button>
+
+        <button onclick="openBankModal()" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-rose-50/40 transition text-left">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-building-columns"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-800">Bank Account & IFSC Details</p>
+              <p class="text-[10px] text-slate-500">Save or update your payout bank account</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+        </button>
+
+        <a href="https://t.me/parlegprogram" target="_blank" rel="noopener noreferrer" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-rose-50/40 transition text-left">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center"><i class="fa-brands fa-telegram text-base"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-800">Official Telegram Channel</p>
+              <p class="text-[10px] text-sky-600 font-semibold">https://t.me/parlegprogram</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+        </a>
+
+        <button onclick="openSupportModal()" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-rose-50/40 transition text-left">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-rose-50 text-mayur-red flex items-center justify-center"><i class="fa-solid fa-comments"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-800">Admin Support & Complaint Box</p>
+              <p class="text-[10px] text-slate-500">Send message directly to Admin</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+        </button>
+
+        <button onclick="openAdminGate()" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-rose-50/40 transition text-left">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center"><i class="fa-solid fa-user-shield"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-slate-800">Admin Panel (PIN Protected)</p>
+              <p class="text-[10px] text-slate-500">Daily UPI/QR update, approve UTR & reply to inbox</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+        </button>
+
+        <button onclick="handleLogout()" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-rose-50 transition text-left">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-slate-100 text-mayur-red flex items-center justify-center"><i class="fa-solid fa-right-from-bracket"></i></div>
+            <div>
+              <p class="text-xs font-extrabold text-mayur-red">Secure Logout</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Floating Support Chat Button -->
+    <button onclick="openSupportModal()" class="fixed bottom-20 right-4 z-30 px-3.5 py-2.5 rounded-full crimson-btn text-white text-xs font-extrabold shadow-xl flex items-center gap-2 border border-amber-300/60 active:scale-95 transition">
+      <i class="fa-solid fa-headset"></i>
+      <span>Admin Chat</span>
+    </button>
+
+    <!-- Bottom Fixed Navigation Bar -->
+    <nav id="bottom-nav-bar" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[460px] bg-white/95 backdrop-blur-md border-t border-rose-100 px-2 py-2 grid grid-cols-4 z-30 shadow-lg">
+      <button onclick="switchMainTab('home')" id="nav-home" class="flex flex-col items-center gap-1 text-mayur-red font-extrabold">
+        <i class="fa-solid fa-house text-base"></i>
+        <span class="text-[10px]">Home</span>
+      </button>
+      <button onclick="switchMainTab('income')" id="nav-income" class="flex flex-col items-center gap-1 text-slate-400 font-bold">
+        <i class="fa-solid fa-chart-line text-base"></i>
+        <span class="text-[10px]">Income</span>
+      </button>
+      <button onclick="switchMainTab('team')" id="nav-team" class="flex flex-col items-center gap-1 text-slate-400 font-bold">
+        <i class="fa-solid fa-users text-base"></i>
+        <span class="text-[10px]">Team</span>
+      </button>
+      <button onclick="switchMainTab('profile')" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400 font-bold">
+        <i class="fa-solid fa-user text-base"></i>
+        <span class="text-[10px]">Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 3. MODALS (RECHARGE, BANK/WITHDRAW, SPIN, SUPPORT, ADMIN) -->
+  <!-- ========================================================= -->
+
+  <!-- MODAL: UPI RECHARGE -->
+  <div id="modal-recharge" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3">
+    <div class="bg-white w-full max-w-[430px] rounded-3xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-black text-mayur-dark">UPI Wallet Recharge</h3>
+          <p class="text-[11px] text-slate-500">Scan QR or copy UPI ID & submit 12-digit UTR</p>
+        </div>
+        <button onclick="closeModal('modal-recharge')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Preset Amounts -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5">Select or Enter Amount (₹)</label>
+        <div class="grid grid-cols-4 gap-2 mb-2">
+          <button type="button" onclick="setRechargeAmount(245)" class="py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs font-extrabold text-mayur-red">₹245</button>
+          <button type="button" onclick="setRechargeAmount(810)" class="py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs font-extrabold text-mayur-red">₹810</button>
+          <button type="button" onclick="setRechargeAmount(5500)" class="py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs font-extrabold text-mayur-red">₹5,500</button>
+          <button type="button" onclick="setRechargeAmount(18000)" class="py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs font-extrabold text-mayur-red">₹18,000</button>
+        </div>
+        <input id="rech-amount" type="number" min="100" value="245" placeholder="Enter deposit amount" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-extrabold bg-slate-50 outline-none focus:border-mayur-red" />
+      </div>
+
+      <!-- Live Dynamic UPI QR & ID Box -->
+      <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-3.5 text-center space-y-2">
+        <p class="text-[11px] font-extrabold text-amber-900 uppercase">Official Payment QR Code</p>
+        <img id="live-upi-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=mayurtrading@upi%26pn=Mayur%20Trading" alt="UPI QR Code" onerror="this.src='https://placehold.co/200x200/4A000D/F3D06B?text=MAYUR+UPI+QR'" class="w-40 h-40 mx-auto rounded-xl border-2 border-mayur-gold bg-white p-1.5 shadow-sm object-contain" />
+        <div class="flex items-center justify-center gap-2 bg-white px-3 py-2 rounded-xl border border-amber-200">
+          <span id="live-upi-id-text" class="text-xs font-black text-mayur-dark">mayurtrading@upi</span>
+          <button type="button" onclick="copyUpiId()" class="px-2.5 py-1 rounded-lg bg-mayur-red text-white text-[10px] font-bold">Copy UPI</button>
+        </div>
+      </div>
+
+      <!-- UTR Submission Form -->
+      <form onsubmit="submitUtrDeposit(event)" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">12-Digit UTR / Reference Number</label>
+          <input id="rech-utr" type="text" maxlength="12" minlength="12" required placeholder="Enter 12-digit UPI UTR number" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold bg-slate-50 outline-none focus:border-mayur-red" />
+        </div>
+        <button type="submit" class="w-full py-3 rounded-2xl crimson-btn text-white font-extrabold text-xs tracking-wide">Submit Payment UTR for Verification</button>
+      </form>
+
+      <!-- Recent Recharge History -->
+      <div>
+        <h4 class="text-[11px] font-extrabold uppercase text-slate-500 mb-2">Recent Deposit Requests</h4>
+        <div id="user-recharge-history" class="space-y-2 max-h-36 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SAVE BANK ACCOUNT & IFSC -->
+  <div id="modal-bank" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3">
+    <div class="bg-white w-full max-w-[430px] rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-black text-mayur-dark">Bank Account & IFSC Setup</h3>
+          <p class="text-[11px] text-slate-500">Save your bank details before submitting withdrawals</p>
+        </div>
+        <button onclick="closeModal('modal-bank')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form onsubmit="saveBankDetails(event)" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Account Holder Name</label>
+          <input id="bank-holder" type="text" required placeholder="Enter account holder full name" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-slate-50 outline-none focus:border-mayur-red" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Bank Account Number</label>
+          <input id="bank-acc" type="text" required placeholder="Enter bank account number" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-slate-50 outline-none focus:border-mayur-red" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">IFSC Code</label>
+          <input id="bank-ifsc" type="text" required placeholder="e.g. SBIN0001234" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold uppercase bg-slate-50 outline-none focus:border-mayur-red" />
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-2xl crimson-btn text-white font-extrabold text-sm">Save Bank Account & IFSC</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: WITHDRAWAL REQUEST -->
+  <div id="modal-withdraw" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3">
+    <div class="bg-white w-full max-w-[430px] rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-black text-mayur-dark">Bank Withdrawal Request</h3>
+          <p class="text-[11px] text-slate-500">Available Balance: ₹<span id="wd-avail-bal">0</span></p>
+        </div>
+        <button onclick="closeModal('modal-withdraw')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-bold text-slate-500 uppercase">Saved Payout Bank</p>
+          <p id="wd-bank-summary" class="text-xs font-extrabold text-slate-800 mt-0.5">A/C: -- | IFSC: --</p>
+        </div>
+        <button type="button" onclick="closeModal('modal-withdraw'); openBankModal();" class="text-xs font-bold text-mayur-red underline">Edit</button>
+      </div>
+
+      <form onsubmit="submitWithdrawal(event)" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Withdrawal Amount (Min ₹200)</label>
+          <input id="wd-amount" type="number" min="200" required placeholder="Enter amount to withdraw" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-extrabold bg-slate-50 outline-none focus:border-mayur-red" />
+        </div>
+        <button type="submit" class="w-full py-3.5 rounded-2xl crimson-btn text-white font-extrabold text-sm">Submit Withdrawal Request</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LUCKY SPIN WHEEL -->
+  <div id="modal-spin" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-[380px] rounded-3xl p-6 text-center shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-black text-mayur-dark">Daily Member Lucky Spin</h3>
+        <button onclick="closeModal('modal-spin')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="spin-wheel-disc" class="w-44 h-44 mx-auto rounded-full royal-header-bg border-4 border-mayur-gold shadow-xl flex items-center justify-center text-amber-300">
+        <div>
+          <i class="fa-solid fa-gift text-4xl mb-1"></i>
+          <p class="text-xs font-black uppercase tracking-wider">Win ₹15 – ₹100</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500">Spin once daily to claim a free wallet bonus reward!</p>
+      <button id="btn-spin-now" onclick="triggerLuckySpin()" class="w-full py-3 rounded-2xl gold-btn font-extrabold text-sm shadow-md">Spin Now (Free)</button>
+    </div>
+  </div>
+
+  <!-- MODAL: LIVE CUSTOMER SUPPORT & ADMIN MESSAGE BOX -->
+  <div id="modal-support" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3">
+    <div class="bg-white w-full max-w-[430px] rounded-3xl p-5 shadow-2xl space-y-3.5 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-black text-mayur-dark">Admin Support & Chat Box</h3>
+          <p class="text-[11px] text-slate-500">Send your issue directly to Admin or join Telegram</p>
+        </div>
+        <button onclick="closeModal('modal-support')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <a href="https://t.me/parlegprogram" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold">
+        <span class="flex items-center gap-2"><i class="fa-brands fa-telegram text-base text-sky-500"></i> Official Telegram: t.me/parlegprogram</span>
+        <span class="underline">Open</span>
+      </a>
+
+      <div id="user-support-thread" class="flex-1 min-h-[160px] max-h-60 overflow-y-auto space-y-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-100"></div>
+
+      <form onsubmit="sendSupportMessage(event)" class="flex gap-2">
+        <input id="support-msg-input" type="text" required placeholder="Write your problem or UTR query..." class="flex-1 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold bg-slate-50 outline-none focus:border-mayur-red" />
+        <button type="submit" class="px-4 py-2.5 rounded-xl crimson-btn text-white text-xs font-extrabold">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMIN SECRET PIN LOCK GATE -->
+  <div id="modal-admin-pin" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-[360px] rounded-3xl p-6 text-center shadow-2xl space-y-4">
+      <div class="w-14 h-14 mx-auto rounded-2xl royal-header-bg border border-mayur-gold flex items-center justify-center text-amber-300 text-xl">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <div>
+        <h3 class="text-base font-black text-mayur-dark">Admin Security Verification</h3>
+        <p class="text-xs text-slate-500 mt-1">Enter your secret Owner PIN to unlock Admin Panel.</p>
+      </div>
+      <form onsubmit="verifyAdminPin(event)" class="space-y-3">
+        <input id="admin-pin-input" type="password" required placeholder="Enter Secret Admin PIN" class="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-center text-sm font-black tracking-widest bg-slate-50 outline-none focus:border-mayur-red" />
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="closeModal('modal-admin-pin')" class="py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Cancel</button>
+          <button type="submit" class="py-2.5 rounded-xl crimson-btn text-white text-xs font-extrabold">Unlock Admin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: FULL ADMIN PANEL (DAILY UPI/QR, UTR APPROVALS, SUPPORT INBOX) -->
+  <div id="modal-admin" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="bg-white w-full max-w-[440px] rounded-3xl p-5 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl royal-header-bg text-amber-300 flex items-center justify-center text-xs"><i class="fa-solid fa-user-shield"></i></span>
+          <div>
+            <h3 class="text-sm font-black text-mayur-dark">Owner Admin Control Panel</h3>
+            <p class="text-[10px] text-emerald-600 font-bold">Unlocked • Full Access</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-admin')" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-extrabold">Lock & Close</button>
+      </div>
+
+      <!-- 1. Daily UPI ID & QR Code Manager -->
+      <div class="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 space-y-2.5">
+        <h4 class="text-xs font-black text-amber-900 uppercase flex items-center gap-1.5">
+          <i class="fa-solid fa-qrcode"></i> Daily UPI ID & QR Code Settings
+        </h4>
+        <form onsubmit="saveAdminUpiSettings(event)" class="space-y-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase">Today's UPI ID</label>
+            <input id="admin-upi-input" type="text" required placeholder="e.g. yourname@okicici" class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold bg-white outline-none" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase">Custom QR Image URL (Optional)</label>
+            <input id="admin-qr-input" type="text" placeholder="Leave blank for auto QR from UPI ID" class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs font-semibold bg-white outline-none" />
+          </div>
+          <button type="submit" class="w-full py-2.5 rounded-xl gold-btn text-xs font-black shadow-xs">Save & Update Live UPI / QR</button>
+        </form>
+      </div>
+
+      <!-- 2. Pending UPI Recharge Approvals -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Pending & Recent UPI UTR Requests</h4>
+        <div id="admin-utr-list" class="space-y-2 max-h-44 overflow-y-auto"></div>
+      </div>
+
+      <!-- 3. User Support Inbox & Replies -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Customer Messages & Complaints</h4>
+        <div id="admin-messages-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      </div>
+
+      <!-- 4. Change Admin Secret PIN -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+        <p class="text-[10px] font-extrabold text-slate-600 uppercase">Change Secret Admin PIN</p>
+        <div class="flex gap-2">
+          <input id="admin-new-pin" type="text" placeholder="New Secret PIN" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold bg-white outline-none" />
+          <button type="button" onclick="updateAdminPin()" class="px-3.5 py-2 rounded-xl bg-mayur-dark text-amber-300 text-xs font-bold">Update PIN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION BANNER -->
+  <div id="toast-box" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-[60] max-w-[90%] px-4 py-2.5 rounded-2xl bg-mayur-dark text-amber-200 text-xs font-extrabold shadow-2xl border border-mayur-gold/50 text-center"></div>
+
+  <!-- ========================================================= -->
+  <!-- 4. COMPLETE APPLICATION JAVASCRIPT LOGIC                  -->
+  <!-- ========================================================= -->
+  <script>
+    const PRODUCT_PLANS = [
+      { id: 'norm-1', cat: 'normal', badge: 'NORMAL PLAN', name: 'Mayur Starter Silk Pack', price: 245, daily: 35, days: 30, icon: 'fa-box-open' },
+      { id: 'norm-2', cat: 'normal', badge: 'NORMAL PLAN', name: 'Mayur Heritage Brass Set', price: 690, daily: 105, days: 30, icon: 'fa-award' },
+      { id: 'spec-1', cat: 'special', badge: 'SPECIAL OFFER', name: 'Mayur Festival Special Box', price: 810, daily: 150, days: 25, icon: 'fa-bolt' },
+      { id: 'welf-1', cat: 'welfare', badge: 'WELFARE PLAN', name: 'Mayur Welfare Gold Bundle', price: 5500, daily: 880, days: 35, icon: 'fa-hand-holding-heart' },
+      { id: 'welf-2', cat: 'welfare', badge: 'WELFARE PLAN', name: 'Mayur Welfare Royal Trunk', price: 11200, daily: 1850, days: 35, icon: 'fa-gem' },
+      { id: 'vip-1', cat: 'vip', badge: 'VIP LEVEL 1', name: 'Mayur VIP Sovereign Edition', price: 18000, daily: 3100, days: 40, icon: 'fa-crown' },
+      { id: 'vip-2', cat: 'vip', badge: 'VIP LEVEL 2', name: 'Mayur VIP Imperial Vault', price: 30000, daily: 5400, days: 40, icon: 'fa-chess-queen' },
+      { id: 'vip-3', cat: 'vip', badge: 'VIP LEVEL 3', name: 'Mayur VIP Maharaja Reserve', price: 45000, daily: 8500, days: 45, icon: 'fa-trophy' }
+    ];
+
+    const STORAGE_KEYS = {
+      USERS: 'mayur_users_v2',
+      SESSION: 'mayur_session_phone_v2',
+      DEPOSITS: 'mayur_deposits_v2',
+      MESSAGES: 'mayur_messages_v2',
+      SETTINGS: 'mayur_settings_v2'
+    };
+
+    let currentFilter = 'all';
+    let generatedOtp = null;
+
+    function getStore(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function setStore(key, val) {
+      try {
+        localStorage.setItem(key, JSON.stringify(val));
+      } catch (e) {}
+    }
+
+    function getSettings() {
+      return getStore(STORAGE_KEYS.SETTINGS, {
+        upiId: 'mayurtrading@upi',
+        qrUrl: '',
+        adminPin: 'MAYUR@786'
+      });
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      box.textContent = msg;
+      box.classList.remove('hidden');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // AUTHENTICATION TABS & HANDLERS
+    function switchAuthTab(tab) {
+      ['login', 'register', 'otp'].forEach(t => {
+        document.getElementById('form-' + t).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById('tab-' + t);
+        if (t === tab) {
+          btn.className = 'py-2 rounded-xl text-xs font-extrabold bg-mayur-red text-white shadow-sm transition';
+        } else {
+          btn.className = 'py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-mayur-red transition';
+        }
+      });
+    }
+
+    function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const pass = document.getElementById('reg-pass').value;
+      const ref = document.getElementById('reg-ref').value.trim();
+
+      if (!/^\d{10}$/.test(phone)) {
+        showToast('Please enter a valid 10-digit mobile number.');
+        return;
+      }
+
+      const users = getStore(STORAGE_KEYS.USERS, {});
+      if (users[phone]) {
+        showToast('Mobile number already registered. Please Login.');
+        switchAuthTab('login');
+        return;
+      }
+
+      users[phone] = {
+        id: 'MT-' + Math.floor(1000 + Math.random() * 9000),
+        name,
+        phone,
+        pass,
+        refCode: 'MAYUR' + phone.slice(-4),
+        referredBy: ref,
+        balance: 0,
+        totalEarned: 0,
+        activePlans: [],
+        bank: null,
+        lastSpinDate: ''
+      };
+      setStore(STORAGE_KEYS.USERS, users);
+      setStore(STORAGE_KEYS.SESSION, phone);
+      showToast('Account created successfully! Welcome to Mayur Trading.');
+      enterPortal();
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const phone = document.getElementById('login-phone').value.trim();
+      const pass = document.getElementById('login-pass').value;
+      const users = getStore(STORAGE_KEYS.USERS, {});
+
+      if (!users[phone]) {
+        showToast('Account not found. Please Register first.');
+        switchAuthTab('register');
+        document.getElementById('reg-phone').value = phone;
+        return;
+      }
+
+      if (users[phone].pass !== pass) {
+        showToast('Incorrect password. Use OTP Reset if forgotten.');
+        return;
+      }
+
+      setStore(STORAGE_KEYS.SESSION, phone);
+      showToast('Login successful!');
+      enterPortal();
+    }
+
+    function sendMockOtp() {
+      const phone = document.getElementById('otp-phone').value.trim();
+      const users = getStore(STORAGE_KEYS.USERS, {});
+      if (!/^\d{10}$/.test(phone)) {
+        showToast('Enter a valid 10-digit mobile number.');
+        return;
+      }
+      if (!users[phone]) {
+        showToast('This mobile number is not registered.');
+        return;
+      }
+      generatedOtp = String(Math.floor(100000 + Math.random() * 900000));
+      document.getElementById('otp-generated-code').textContent = generatedOtp;
+      document.getElementById('otp-display-box').classList.remove('hidden');
+      showToast('6-Digit OTP generated on screen!');
+    }
+
+    function handleOtpReset(e) {
+      e.preventDefault();
+      const phone = document.getElementById('otp-phone').value.trim();
+      const code = document.getElementById('otp-code').value.trim();
+      const newPass = document.getElementById('otp-newpass').value;
+      const users = getStore(STORAGE_KEYS.USERS, {});
+
+      if (!users[phone]) {
+        showToast('Mobile number not found.');
+        return;
+      }
+      if (!generatedOtp || code !== generatedOtp) {
+        showToast('Invalid 6-digit OTP. Click Send OTP first.');
+        return;
+      }
+
+      users[phone].pass = newPass;
+      setStore(STORAGE_KEYS.USERS, users);
+      generatedOtp = null;
+      document.getElementById('otp-display-box').classList.add('hidden');
+      showToast('Password reset successful! Please sign in.');
+      switchAuthTab('login');
+    }
+
+    function handleLogout() {
+      localStorage.removeItem(STORAGE_KEYS.SESSION);
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('auth-gate').classList.remove('hidden');
+      showToast('Logged out securely.');
+    }
+
+    function getCurrentUser() {
+      const phone = getStore(STORAGE_KEYS.SESSION, null);
+      if (!phone) return null;
+      const users = getStore(STORAGE_KEYS.USERS, {});
+      return users[phone] || null;
+    }
+
+    function saveCurrentUser(userObj) {
+      const users = getStore(STORAGE_KEYS.USERS, {});
+      users[userObj.phone] = userObj;
+      setStore(STORAGE_KEYS.USERS, users);
+    }
+
+    function enterPortal() {
+      const user = getCurrentUser();
+      if (!user) return;
+      document.getElementById('auth-gate').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+      refreshUI();
+    }
+
+    function refreshUI() {
+      const user = getCurrentUser();
+      if (!user) return;
+
+      document.getElementById('top-mini-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('inc-wallet-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('prof-wallet-bal').textContent = user.balance.toLocaleString('en-IN');
+
+      document.getElementById('prof-user-name').textContent = user.name;
+      document.getElementById('prof-user-phone').textContent = '+91 ' + user.phone;
+      document.getElementById('prof-user-id').textContent = user.id;
+      document.getElementById('team-ref-code').textContent = user.refCode;
+
+      if (user.bank) {
+        document.getElementById('prof-bank-status').textContent = 'A/C ••••' + user.bank.acc.slice(-4);
+      } else {
+        document.getElementById('prof-bank-status').textContent = 'Not Linked';
+      }
+
+      const dailyEst = user.activePlans.reduce((sum, p) => sum + p.daily, 0);
+      document.getElementById('inc-active-count').textContent = user.activePlans.length;
+      document.getElementById('inc-daily-est').textContent = dailyEst.toLocaleString('en-IN');
+      document.getElementById('inc-total-earned').textContent = (user.totalEarned || 0).toLocaleString('en-IN');
+
+      renderPlans();
+      renderActivePlans();
+    }
+
+    // MAIN NAVIGATION TABS
+    function switchMainTab(tab) {
+      ['home', 'income', 'team', 'profile'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('hidden', t !== tab);
+        const navBtn = document.getElementById('nav-' + t);
+        if (t === tab) {
+          navBtn.className = 'flex flex-col items-center gap-1 text-mayur-red font-extrabold';
+        } else {
+          navBtn.className = 'flex flex-col items-center gap-1 text-slate-400 font-bold';
+        }
+      });
+      refreshUI();
+    }
+
+    // RENDER PRODUCT PLANS
+    function filterPlans(cat) {
+      currentFilter = cat;
+      ['all', 'normal', 'welfare', 'vip', 'special'].forEach(c => {
+        const btn = document.getElementById('cat-' + c);
+        if (c === cat) {
+          btn.className = 'px-4 py-2 rounded-full text-xs font-extrabold bg-mayur-red text-white shadow-xs whitespace-nowrap';
+        } else {
+          btn.className = 'px-4 py-2 rounded-full text-xs font-bold bg-white text-slate-700 border border-rose-100 whitespace-nowrap';
+        }
+      });
+      renderPlans();
+    }
+
+    function renderPlans() {
+      const list = document.getElementById('plans-list');
+      const filtered = currentFilter === 'all' ? PRODUCT_PLANS : PRODUCT_PLANS.filter(p => p.cat === currentFilter);
+
+      list.innerHTML = filtered.map(plan => `
+        <div class="bg-white rounded-3xl p-4 border border-rose-100 shadow-xs space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl royal-header-bg border border-mayur-gold flex items-center justify-center text-amber-300 text-lg shrink-0">
+                <i class="fa-solid ${plan.icon}"></i>
+              </div>
+              <div>
+                <span class="inline-block px-2 py-0.5 rounded-full bg-rose-50 text-mayur-red text-[9px] font-black uppercase tracking-wider">${plan.badge}</span>
+                <h4 class="text-sm font-extrabold text-slate-800 mt-0.5">${plan.name}</h4>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] font-bold text-slate-400 uppercase">Price</p>
+              <p class="text-base font-black text-mayur-red">₹${plan.price.toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 bg-rose-50/60 rounded-2xl p-2.5 text-center">
+            <div>
+              <p class="text-[10px] text-slate-500 font-semibold">Est. Daily</p>
+              <p class="text-xs font-black text-emerald-600">₹${plan.daily.toLocaleString('en-IN')}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-500 font-semibold">Cycle</p>
+              <p class="text-xs font-black text-slate-800">${plan.days} Days</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-500 font-semibold">Est. Total</p>
+              <p class="text-xs font-black text-mayur-dark">₹${(plan.daily * plan.days).toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+
+          <p class="text-[10px] text-slate-500 leading-snug">
+            Disclaimer: We are product traders only and do not guarantee fixed returns. Please purchase plans at your own risk and exercise patience—everyone's funds remain safe.
+          </p>
+
+          <button onclick="buyProductPlan('${plan.id}')" class="w-full py-2.5 rounded-2xl crimson-btn text-white text-xs font-extrabold tracking-wide active:scale-98 transition">
+            Buy Plan • ₹${plan.price.toLocaleString('en-IN')}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function buyProductPlan(planId) {
+      const user = getCurrentUser();
+      const plan = PRODUCT_PLANS.find(p => p.id === planId);
+      if (!user || !plan) return;
+
+      if (user.balance < plan.price) {
+        showToast(`Insufficient wallet balance (₹${user.balance}). Please Recharge ₹${plan.price - user.balance} more.`);
+        openRechargeModal(plan.price);
+        return;
+      }
+
+      user.balance -= plan.price;
+      user.activePlans.push({
+        ...plan,
+        purchasedAt: new Date().toLocaleDateString('en-IN')
+      });
+      saveCurrentUser(user);
+      refreshUI();
+      showToast(`Activated ${plan.name}! View it in Income tab.`);
+    }
+
+    function renderActivePlans() {
+      const user = getCurrentUser();
+      const container = document.getElementById('active-plans-container');
+      if (!user || user.activePlans.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 text-center border border-rose-100">
+            <i class="fa-solid fa-box-open text-2xl text-slate-300 mb-2"></i>
+            <p class="text-xs font-bold text-slate-500">No active plans yet. Select a plan from Home to begin.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = user.activePlans.map(p => `
+        <div class="bg-white rounded-2xl p-3.5 border border-rose-100 flex items-center justify-between">
+          <div>
+            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Active • ${p.purchasedAt}</span>
+            <h5 class="text-xs font-extrabold text-slate-800 mt-1">${p.name}</h5>
+            <p class="text-[11px] text-slate-500">Invested: ₹${p.price.toLocaleString('en-IN')} • Est. Daily: ₹${p.daily}</p>
+          </div>
+          <span class="text-xs font-black text-emerald-600">+₹${p.daily}/day</span>
+        </div>
+      `).join('');
+    }
+
+    function claimDailyYield() {
+      const user = getCurrentUser();
+      if (!user || user.activePlans.length === 0) {
+        showToast('Activate at least one product plan to collect daily yield.');
+        return;
+      }
+      const dailyTotal = user.activePlans.reduce((sum, p) => sum + p.daily, 0);
+      user.balance += dailyTotal;
+      user.totalEarned = (user.totalEarned || 0) + dailyTotal;
+      saveCurrentUser(user);
+      refreshUI();
+      showToast(`₹${dailyTotal.toLocaleString('en-IN')} added to your wallet!`);
+    }
+
+    // UPI RECHARGE & ADMIN APPROVAL
+    function openRechargeModal(prefillAmount) {
+      const settings = getSettings();
+      document.getElementById('live-upi-id-text').textContent = settings.upiId;
+      const qrImg = document.getElementById('live-upi-qr-img');
+      if (settings.qrUrl && settings.qrUrl.trim()) {
+        qrImg.src = settings.qrUrl.trim();
+      } else {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('upi://pay?pa=' + settings.upiId + '&pn=MayurTrading')}`;
+      }
+      if (prefillAmount) {
+        document.getElementById('rech-amount').value = prefillAmount;
+      }
+      renderUserRechargeHistory();
+      openModal('modal-recharge');
+    }
+
+    function setRechargeAmount(amt) {
+      document.getElementById('rech-amount').value = amt;
+    }
+
+    function copyUpiId() {
+      const text = document.getElementById('live-upi-id-text').textContent;
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      showToast('UPI ID copied: ' + text);
+    }
+
+    function submitUtrDeposit(e) {
+      e.preventDefault();
+      const user = getCurrentUser();
+      const amount = Number(document.getElementById('rech-amount').value);
+      const utr = document.getElementById('rech-utr').value.trim();
+
+      if (!/^\d{12}$/.test(utr)) {
+        showToast('Please enter a valid 12-digit numeric UTR number.');
+        return;
+      }
+
+      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []);
+      deposits.unshift({
+        id: 'DEP-' + Date.now(),
+        phone: user.phone,
+        userName: user.name,
+        amount,
+        utr,
+        status: 'Pending',
+        time: new Date().toLocaleString('en-IN')
+      });
+      setStore(STORAGE_KEYS.DEPOSITS, deposits);
+      document.getElementById('rech-utr').value = '';
+      renderUserRechargeHistory();
+      showToast('UTR submitted! Admin will approve shortly.');
+    }
+
+    function renderUserRechargeHistory() {
+      const user = getCurrentUser();
+      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []).filter(d => d.phone === user.phone);
+      const box = document.getElementById('user-recharge-history');
+
+      if (deposits.length === 0) {
+        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No recharge requests yet.</p>';
+        return;
+      }
+
+      box.innerHTML = deposits.map(d => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+          <div>
+            <p class="font-extrabold text-slate-800">₹${d.amount.toLocaleString('en-IN')} • UTR: ${d.utr}</p>
+            <p class="text-[10px] text-slate-400">${d.time}</p>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${d.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}">${d.status}</span>
+        </div>
+      `).join('');
+    }
+
+    // BANK ACCOUNT & WITHDRAWAL
+    function openBankModal() {
+      const user = getCurrentUser();
+      if (user && user.bank) {
+        document.getElementById('bank-holder').value = user.bank.holder;
+        document.getElementById('bank-acc').value = user.bank.acc;
+        document.getElementById('bank-ifsc').value = user.bank.ifsc;
+      }
+      openModal('modal-bank');
+    }
+
+    function saveBankDetails(e) {
+      e.preventDefault();
+      const user = getCurrentUser();
+      user.bank = {
+        holder: document.getElementById('bank-holder').value.trim(),
+        acc: document.getElementById('bank-acc').value.trim(),
+        ifsc: document.getElementById('bank-ifsc').value.trim().toUpperCase()
+      };
+      saveCurrentUser(user);
+      refreshUI();
+      closeModal('modal-bank');
+      showToast('Bank Account & IFSC saved successfully!');
+    }
+
+    function handleWithdrawClick() {
+      const user = getCurrentUser();
+      if (!user) return;
+
+      if (!user.bank) {
+        showToast('Please save your Bank Account Number & IFSC first.');
+        openBankModal();
+        return;
+      }
+
+      document.getElementById('wd-avail-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('wd-bank-summary').textContent = `A/C: ${user.bank.acc} | IFSC: ${user.bank.ifsc}`;
+      openModal('modal-withdraw');
+    }
+
+    function submitWithdrawal(e) {
+      e.preventDefault();
+      const user = getCurrentUser();
+      const amt = Number(document.getElementById('wd-amount').value);
+
+      if (amt < 200) {
+        showToast('Minimum withdrawal amount is ₹200.');
+        return;
+      }
+      if (amt > user.balance) {
+        showToast('Insufficient wallet balance.');
+        return;
+      }
+
+      user.balance -= amt;
+      saveCurrentUser(user);
+      refreshUI();
+      closeModal('modal-withdraw');
+      showToast(`Withdrawal request of ₹${amt.toLocaleString('en-IN')} submitted to ${user.bank.acc}!`);
+    }
+
+    // LUCKY SPIN & REFERRAL
+    function triggerLuckySpin() {
+      const user = getCurrentUser();
+      const today = new Date().toDateString();
+      if (user.lastSpinDate === today) {
+        showToast('You already claimed your daily spin today. Come back tomorrow!');
+        return;
+      }
+
+      const disc = document.getElementById('spin-wheel-disc');
+      disc.classList.add('wheel-spinning');
+      document.getElementById('btn-spin-now').disabled = true;
+
+      setTimeout(() => {
+        disc.classList.remove('wheel-spinning');
+        document.getElementById('btn-spin-now').disabled = false;
+        const rewards = [15, 25, 50, 75, 100];
+        const won = rewards[Math.floor(Math.random() * rewards.length)];
+        user.balance += won;
+        user.lastSpinDate = today;
+        saveCurrentUser(user);
+        refreshUI();
+        closeModal('modal-spin');
+        showToast(`Congratulations! You won ₹${won} Lucky Spin bonus!`);
+      }, 3200);
+    }
+
+    function copyReferralCode() {
+      const code = document.getElementById('team-ref-code').textContent;
+      const temp = document.createElement('textarea');
+      temp.value = code;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      showToast('Referral code copied: ' + code);
+    }
+
+    // SUPPORT CHAT BOX
+    function openSupportModal() {
+      renderUserSupportThread();
+      openModal('modal-support');
+    }
+
+    function sendSupportMessage(e) {
+      e.preventDefault();
+      const user = getCurrentUser();
+      const input = document.getElementById('support-msg-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const msgs = getStore(STORAGE_KEYS.MESSAGES, []);
+      msgs.push({
+        id: 'MSG-' + Date.now(),
+        phone: user.phone,
+        userName: user.name,
+        text,
+        reply: '',
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      });
+      setStore(STORAGE_KEYS.MESSAGES, msgs);
+      input.value = '';
+      renderUserSupportThread();
+      showToast('Message sent to Admin!');
+    }
+
+    function renderUserSupportThread() {
+      const user = getCurrentUser();
+      const msgs = getStore(STORAGE_KEYS.MESSAGES, []).filter(m => m.phone === user.phone);
+      const box = document.getElementById('user-support-thread');
+
+      if (msgs.length === 0) {
+        box.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">No messages yet. Write your query below to chat with Admin.</p>';
+        return;
+      }
+
+      box.innerHTML = msgs.map(m => `
+        <div class="space-y-1.5">
+          <div class="bg-mayur-red text-white rounded-2xl rounded-tr-xs px-3 py-2 text-xs ml-8">
+            <p>${m.text}</p>
+            <span class="block text-[9px] text-rose-200 text-right mt-0.5">${m.time}</span>
+          </div>
+          ${m.reply ? `
+            <div class="bg-white border border-amber-200 text-slate-800 rounded-2xl rounded-tl-xs px-3 py-2 text-xs mr-8">
+              <span class="text-[9px] font-black text-amber-700 uppercase block">Admin Reply:</span>
+              <p class="mt-0.5">${m.reply}</p>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    // ADMIN PIN GATE & CONTROL PANEL
+    function openAdminGate() {
+      document.getElementById('admin-pin-input').value = '';
+      openModal('modal-admin-pin');
+    }
+
+    function verifyAdminPin(e) {
+      e.preventDefault();
+      const entered = document.getElementById('admin-pin-input').value.trim();
+      const settings = getSettings();
+      if (entered !== settings.adminPin) {
+        showToast('Incorrect Admin Secret PIN!');
+        return;
+      }
+      closeModal('modal-admin-pin');
+      openAdminPanel();
+    }
+
+    function openAdminPanel() {
+      const settings = getSettings();
+      document.getElementById('admin-upi-input').value = settings.upiId;
+      document.getElementById('admin-qr-input').value = settings.qrUrl || '';
+      renderAdminUtrList();
+      renderAdminMessages();
+      openModal('modal-admin');
+    }
+
+    function saveAdminUpiSettings(e) {
+      e.preventDefault();
+      const settings = getSettings();
+      settings.upiId = document.getElementById('admin-upi-input').value.trim();
+      settings.qrUrl = document.getElementById('admin-qr-input').value.trim();
+      setStore(STORAGE_KEYS.SETTINGS, settings);
+      showToast('Live UPI ID & QR Code updated for all users!');
+    }
+
+    function renderAdminUtrList() {
+      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []);
+      const box = document.getElementById('admin-utr-list');
+      if (deposits.length === 0) {
+        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No UPI recharge requests yet.</p>';
+        return;
+      }
+
+      box.innerHTML = deposits.map(d => `
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+          <div>
+            <p class="font-extrabold text-slate-800">${d.userName} (${d.phone})</p>
+            <p class="text-[11px] font-bold text-mayur-red">₹${d.amount.toLocaleString('en-IN')} • UTR: ${d.utr}</p>
+          </div>
+          ${d.status === 'Pending'
+            ? `<button onclick="approveDeposit('${d.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-extrabold">Approve</button>`
+            : `<span class="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[10px] font-extrabold">Approved</span>`}
+        </div>
+      `).join('');
+    }
+
+    function approveDeposit(depId) {
+      const deposits = getStore(STORAGE_KEYS.DEPOSITS, []);
+      const idx = deposits.findIndex(d => d.id === depId);
+      if (idx === -1 || deposits[idx].status === 'Approved') return;
+
+      deposits[idx].status = 'Approved';
+      setStore(STORAGE_KEYS.DEPOSITS, deposits);
+
+      const users = getStore(STORAGE_KEYS.USERS, {});
+      const targetPhone = deposits[idx].phone;
+      if (users[targetPhone]) {
+        users[targetPhone].balance += deposits[idx].amount;
+        setStore(STORAGE_KEYS.USERS, users);
+      }
+
+      renderAdminUtrList();
+      refreshUI();
+      showToast(`Approved ₹${deposits[idx].amount} for ${deposits[idx].userName}!`);
+    }
+
+    function renderAdminMessages() {
+      const msgs = getStore(STORAGE_KEYS.MESSAGES, []);
+      const box = document.getElementById('admin-messages-list');
+      if (msgs.length === 0) {
+        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No user messages in inbox.</p>';
+        return;
+      }
+
+      box.innerHTML = msgs.slice().reverse().map(m => `
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
+          <div class="flex justify-between text-[10px] font-bold text-slate-500">
+            <span>${m.userName} (+91 ${m.phone})</span>
+            <span>${m.time}</span>
+          </div>
+          <p class="font-semibold text-slate-800">${m.text}</p>
+          <div class="flex gap-1.5 pt-1">
+            <input id="reply-input-${m.id}" type="text" value="${m.reply || ''}" placeholder="Write Admin reply..." class="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] bg-white outline-none" />
+            <button onclick="sendAdminReply('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-mayur-red text-white text-[10px] font-bold">Reply</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function sendAdminReply(msgId) {
+      const msgs = getStore(STORAGE_KEYS.MESSAGES, []);
+      const idx = msgs.findIndex(m => m.id === msgId);
+      if (idx === -1) return;
+      const val = document.getElementById('reply-input-' + msgId).value.trim();
+      msgs[idx].reply = val;
+      setStore(STORAGE_KEYS.MESSAGES, msgs);
+      showToast('Reply sent to user!');
+    }
+
+    function updateAdminPin() {
+      const newPin = document.getElementById('admin-new-pin').value.trim();
+      if (newPin.length < 4) {
+        showToast('New PIN must be at least 4 characters.');
+        return;
+      }
+      const settings = getSettings();
+      settings.adminPin = newPin;
+      setStore(STORAGE_KEYS.SETTINGS, settings);
+      document.getElementById('admin-new-pin').value = '';
+      showToast('Secret Admin PIN updated to: ' + newPin);
+    }
+
+    window.onload = function () {
+      if (getCurrentUser()) {
+        enterPortal();
+      }
+    };
+  </script>
+</body>
+</html>
