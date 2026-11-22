@@ -317,14 +317,16 @@
     <!-- ===================================== -->
     <section id="view-income" class="hidden px-3.5 pt-3 space-y-3.5">
       <div class="royal-header-bg rounded-3xl p-5 text-white shadow-lg border border-mayur-gold/40">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <div>
             <p class="text-[11px] font-bold uppercase tracking-wider text-amber-200/80">Available Wallet Balance</p>
             <h3 class="text-3xl font-black mt-1">₹<span id="inc-wallet-bal">0</span></h3>
           </div>
-          <button onclick="claimDailyYield()" class="px-4 py-2.5 rounded-2xl gold-btn text-xs font-extrabold shadow-md active:scale-95 transition">
-            <i class="fa-solid fa-coins mr-1"></i> Collect Daily Yield
-          </button>
+          <div class="bg-white/10 border border-mayur-gold/50 rounded-2xl px-3.5 py-2.5 text-right shrink-0">
+            <p class="text-[9px] font-extrabold uppercase tracking-wider text-amber-200">Next Auto-Credit (12 AM)</p>
+            <p id="auto-payout-timer" class="text-base font-black font-mono text-emerald-300 mt-0.5">00:00:00</p>
+            <p class="text-[9px] text-rose-100/80">Auto-updates after midnight</p>
+          </div>
         </div>
         <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/15 text-center">
           <div>
@@ -332,12 +334,31 @@
             <p id="inc-active-count" class="text-sm font-extrabold mt-0.5">0</p>
           </div>
           <div>
-            <p class="text-[10px] text-rose-100/75">Daily Est. Yield</p>
+            <p class="text-[10px] text-rose-100/75">Daily Auto Yield</p>
             <p class="text-sm font-extrabold text-amber-300 mt-0.5">₹<span id="inc-daily-est">0</span></p>
           </div>
           <div>
-            <p class="text-[10px] text-rose-100/75">Total Earned</p>
+            <p class="text-[10px] text-rose-100/75">Total Auto-Earned</p>
             <p class="text-sm font-extrabold text-emerald-300 mt-0.5">₹<span id="inc-total-earned">0</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-Step Withdrawal Eligibility Checklist -->
+      <div class="bg-white rounded-3xl p-4 border border-rose-100 shadow-xs space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-mayur-dark">Withdrawal Unlock Progress</h4>
+          <span id="wd-unlock-badge" class="px-2.5 py-0.5 rounded-full bg-rose-100 text-mayur-red text-[10px] font-extrabold">Locked</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+          <div id="step-badge-normal" class="p-2 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-500">
+            <i class="fa-solid fa-circle-xmark block mb-1 text-xs"></i>1. Normal Plan
+          </div>
+          <div id="step-badge-welfare" class="p-2 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-500">
+            <i class="fa-solid fa-circle-xmark block mb-1 text-xs"></i>2. Welfare Plan
+          </div>
+          <div id="step-badge-vip" class="p-2 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-500">
+            <i class="fa-solid fa-circle-xmark block mb-1 text-xs"></i>3. VIP Plan
           </div>
         </div>
       </div>
@@ -729,8 +750,23 @@
             <input id="admin-upi-input" type="text" required placeholder="e.g. yourname@okicici" class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold bg-white outline-none" />
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-600 uppercase">Custom QR Image URL (Optional)</label>
-            <input id="admin-qr-input" type="text" placeholder="Leave blank for auto QR from UPI ID" class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs font-semibold bg-white outline-none" />
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Upload QR Code Photo (From Gallery)</label>
+            <div class="flex items-center gap-2">
+              <label class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 border-dashed border-amber-400 bg-white hover:bg-amber-50 text-xs font-extrabold text-mayur-dark cursor-pointer transition">
+                <i class="fa-solid fa-image text-mayur-red"></i>
+                <span id="admin-qr-file-label">Choose QR Photo from Gallery</span>
+                <input id="admin-qr-file" type="file" accept="image/*" class="hidden" onchange="handleAdminQrFileUpload(event)" />
+              </label>
+              <button type="button" onclick="clearAdminQrPhoto()" class="px-3 py-2.5 rounded-xl bg-rose-100 text-mayur-red text-[11px] font-extrabold" title="Remove Custom QR">Reset</button>
+            </div>
+            <div id="admin-qr-preview-wrap" class="hidden mt-2 flex items-center gap-3 bg-white p-2 rounded-xl border border-amber-200">
+              <img id="admin-qr-preview-img" src="" alt="QR Preview" class="w-14 h-14 rounded-lg object-contain border border-slate-200" />
+              <div class="text-[11px]">
+                <p class="font-extrabold text-emerald-700"><i class="fa-solid fa-circle-check"></i> QR Photo Ready</p>
+                <p class="text-slate-500">Click Save below to publish live</p>
+              </div>
+            </div>
+            <input id="admin-qr-input" type="hidden" />
           </div>
           <button type="submit" class="w-full py-2.5 rounded-xl gold-btn text-xs font-black shadow-xs">Save & Update Live UPI / QR</button>
         </form>
@@ -742,10 +778,19 @@
         <div id="admin-utr-list" class="space-y-2 max-h-44 overflow-y-auto"></div>
       </div>
 
+      <!-- 2B. Customer Withdrawal Requests -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Member Withdrawal Requests</h4>
+        <div id="admin-withdraw-list" class="space-y-2 max-h-44 overflow-y-auto"></div>
+      </div>
+
       <!-- 3. User Support Inbox & Replies -->
       <div class="space-y-2">
-        <h4 class="text-xs font-black text-slate-700 uppercase">Customer Messages & Complaints</h4>
-        <div id="admin-messages-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-black text-slate-700 uppercase">Customer Messages & Complaints</h4>
+          <span id="admin-msg-count" class="px-2 py-0.5 rounded-full bg-mayur-red text-white text-[10px] font-extrabold">0</span>
+        </div>
+        <div id="admin-messages-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
       </div>
 
       <!-- 4. Change Admin Secret PIN -->
@@ -782,30 +827,30 @@
 
     const PRODUCT_PLANS = [
       // Normal Plans (245 to 35000)
-      { id: 'N1', cat: 'normal', name: 'Mayur Starter Silver', price: 245, daily: 38, days: 18, badge: 'Starter' },
-      { id: 'N2', cat: 'normal', name: 'Mayur Bronze Trade', price: 590, daily: 92, days: 20, badge: 'Popular' },
-      { id: 'N3', cat: 'normal', name: 'Mayur Gold Desk', price: 1450, daily: 230, days: 22, badge: 'Hot' },
-      { id: 'N4', cat: 'normal', name: 'Mayur Emerald Pro', price: 3200, daily: 520, days: 24, badge: 'Trending' },
-      { id: 'N5', cat: 'normal', name: 'Mayur Sapphire Elite', price: 7800, daily: 1300, days: 25, badge: 'Pro' },
-      { id: 'N6', cat: 'normal', name: 'Mayur Ruby Sovereign', price: 16500, daily: 2850, days: 28, badge: 'Elite' },
-      { id: 'N7', cat: 'normal', name: 'Mayur Imperial Crown', price: 35000, daily: 6300, days: 30, badge: 'Max Normal' },
+      { id: 'N1', cat: 'normal', name: 'Mayur Starter Silver', price: 245, daily: 38, days: 18, badge: 'Starter', img: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=400&q=80' },
+      { id: 'N2', cat: 'normal', name: 'Mayur Bronze Trade', price: 590, daily: 92, days: 20, badge: 'Popular', img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80' },
+      { id: 'N3', cat: 'normal', name: 'Mayur Gold Desk', price: 1450, daily: 230, days: 22, badge: 'Hot', img: 'https://images.unsplash.com/photo-1624365168968-f283d506c6b6?auto=format&fit=crop&w=400&q=80' },
+      { id: 'N4', cat: 'normal', name: 'Mayur Emerald Pro', price: 3200, daily: 520, days: 24, badge: 'Trending', img: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80' },
+      { id: 'N5', cat: 'normal', name: 'Mayur Sapphire Elite', price: 7800, daily: 1300, days: 25, badge: 'Pro', img: 'https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&w=400&q=80' },
+      { id: 'N6', cat: 'normal', name: 'Mayur Ruby Sovereign', price: 16500, daily: 2850, days: 28, badge: 'Elite', img: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=400&q=80' },
+      { id: 'N7', cat: 'normal', name: 'Mayur Imperial Crown', price: 35000, daily: 6300, days: 30, badge: 'Max Normal', img: 'https://images.unsplash.com/photo-1584302179602-e4c3d3fd629d?auto=format&fit=crop&w=400&q=80' },
 
       // Welfare Plans (300 to 25000)
-      { id: 'W1', cat: 'welfare', name: 'Welfare Basic Boost', price: 300, daily: 55, days: 12, badge: 'Welfare' },
-      { id: 'W2', cat: 'welfare', name: 'Welfare Smart Yield', price: 1100, daily: 210, days: 14, badge: 'Welfare' },
-      { id: 'W3', cat: 'welfare', name: 'Welfare Growth Plus', price: 4200, daily: 820, days: 15, badge: 'Welfare' },
-      { id: 'W4', cat: 'welfare', name: 'Welfare Prime Shield', price: 11500, daily: 2300, days: 16, badge: 'Welfare' },
-      { id: 'W5', cat: 'welfare', name: 'Welfare Royal Fund', price: 25000, daily: 5200, days: 18, badge: 'Max Welfare' },
+      { id: 'W1', cat: 'welfare', name: 'Welfare Basic Boost', price: 300, daily: 55, days: 12, badge: 'Welfare', img: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=400&q=80' },
+      { id: 'W2', cat: 'welfare', name: 'Welfare Smart Yield', price: 1100, daily: 210, days: 14, badge: 'Welfare', img: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=400&q=80' },
+      { id: 'W3', cat: 'welfare', name: 'Welfare Growth Plus', price: 4200, daily: 820, days: 15, badge: 'Welfare', img: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=400&q=80' },
+      { id: 'W4', cat: 'welfare', name: 'Welfare Prime Shield', price: 11500, daily: 2300, days: 16, badge: 'Welfare', img: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=400&q=80' },
+      { id: 'W5', cat: 'welfare', name: 'Welfare Royal Fund', price: 25000, daily: 5200, days: 18, badge: 'Max Welfare', img: 'https://images.unsplash.com/photo-1565514020179-026b92b84bb6?auto=format&fit=crop&w=400&q=80' },
 
       // VIP Plans (5500 to 45000)
-      { id: 'V1', cat: 'vip', name: 'VIP Diamond I', price: 5500, daily: 1150, days: 20, badge: 'VIP 1' },
-      { id: 'V2', cat: 'vip', name: 'VIP Diamond II', price: 12000, daily: 2600, days: 22, badge: 'VIP 2' },
-      { id: 'V3', cat: 'vip', name: 'VIP Platinum III', price: 24000, daily: 5400, days: 25, badge: 'VIP 3' },
-      { id: 'V4', cat: 'vip', name: 'VIP Maharaja IV', price: 36000, daily: 8300, days: 28, badge: 'VIP 4' },
-      { id: 'V5', cat: 'vip', name: 'VIP Peacock Emperor', price: 45000, daily: 10800, days: 30, badge: 'VIP 5' },
+      { id: 'V1', cat: 'vip', name: 'VIP Diamond I', price: 5500, daily: 1150, days: 20, badge: 'VIP 1', img: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=400&q=80' },
+      { id: 'V2', cat: 'vip', name: 'VIP Diamond II', price: 12000, daily: 2600, days: 22, badge: 'VIP 2', img: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=400&q=80' },
+      { id: 'V3', cat: 'vip', name: 'VIP Platinum III', price: 24000, daily: 5400, days: 25, badge: 'VIP 3', img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=400&q=80' },
+      { id: 'V4', cat: 'vip', name: 'VIP Maharaja IV', price: 36000, daily: 8300, days: 28, badge: 'VIP 4', img: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=400&q=80' },
+      { id: 'V5', cat: 'vip', name: 'VIP Peacock Emperor', price: 45000, daily: 10800, days: 30, badge: 'VIP 5', img: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=400&q=80' },
 
       // Special Plan (810)
-      { id: 'S1', cat: 'special', name: 'Mayur Special Peacock Edition', price: 810, daily: 185, days: 15, badge: 'LIMITED ₹810' }
+      { id: 'S1', cat: 'special', name: 'Mayur Special Peacock Edition', price: 810, daily: 185, days: 15, badge: 'LIMITED ₹810', img: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=400&q=80' }
     ];
 
     // In-memory state (synchronized with Firestore when online)
@@ -816,6 +861,7 @@
       upiQrUrl: '',
       adminPin: 'MAYUR@786',
       recharges: [],
+      withdrawals: [],
       messages: [],
       activeFilter: 'all',
       generatedOtp: null
@@ -884,6 +930,16 @@
           refreshAllViews();
         }, (err) => console.warn('Messages sync error:', err));
 
+        // 5. Real-time listener for Withdrawal Requests
+        const wdCol = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'withdrawals');
+        onSnapshot(wdCol, (snap) => {
+          const list = [];
+          snap.forEach((docSnap) => list.push(docSnap.data()));
+          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          state.withdrawals = list;
+          refreshAllViews();
+        }, (err) => console.warn('Withdrawals sync error:', err));
+
       } catch (e) {
         console.warn('Running in standalone mode:', e);
       }
@@ -921,14 +977,111 @@
       } catch (e) { console.warn('Save message failed:', e); }
     }
 
-    // Helper: Toast Notification
+    async function saveWithdrawalToCloud(wdObj) {
+      if (!cloudReady || !cloudDb) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'withdrawals', wdObj.id), wdObj);
+      } catch (e) { console.warn('Save withdrawal failed:', e); }
+    }
+
+    // Automatic Midnight (12:00 AM) Daily Income Settlement Engine
+    function getLocalDateKey(ts = Date.now()) {
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function countElapsedMidnights(lastDateKey, currentDateKey) {
+      if (!lastDateKey || lastDateKey >= currentDateKey) return 0;
+      const [y1, m1, d1] = lastDateKey.split('-').map(Number);
+      const [y2, m2, d2] = currentDateKey.split('-').map(Number);
+      const utc1 = Date.UTC(y1, m1 - 1, d1);
+      const utc2 = Date.UTC(y2, m2 - 1, d2);
+      const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
+      return Math.max(0, diffDays);
+    }
+
+    async function processAutomaticMidnightYield() {
+      const user = getCurrentUser();
+      if (!user || !user.activePlans || user.activePlans.length === 0) return;
+
+      const todayKey = getLocalDateKey();
+      let totalAutoCredited = 0;
+      let updated = false;
+
+      user.activePlans.forEach(p => {
+        if (!p.lastCreditedDateKey) {
+          p.lastCreditedDateKey = todayKey;
+          updated = true;
+          return;
+        }
+        const daysPassed = countElapsedMidnights(p.lastCreditedDateKey, todayKey);
+        if (daysPassed > 0 && p.daysClaimed < p.days) {
+          const remainingDays = p.days - p.daysClaimed;
+          const creditableDays = Math.min(daysPassed, remainingDays);
+          if (creditableDays > 0) {
+            totalAutoCredited += creditableDays * p.daily;
+            p.daysClaimed += creditableDays;
+            p.lastCreditedDateKey = todayKey;
+            updated = true;
+          }
+        } else if (daysPassed > 0) {
+          p.lastCreditedDateKey = todayKey;
+          updated = true;
+        }
+      });
+
+      if (updated) {
+        if (totalAutoCredited > 0) {
+          user.balance += totalAutoCredited;
+          user.totalEarned = (user.totalEarned || 0) + totalAutoCredited;
+          showToast(`Auto-Credited ₹${totalAutoCredited.toLocaleString('en-IN')} daily yield after 12:00 AM!`);
+        }
+        await saveUserToCloud(user);
+      }
+    }
+
+    function startMidnightCountdownTimer() {
+      if (window._midnightInterval) clearInterval(window._midnightInterval);
+      const updateClock = () => {
+        const now = new Date();
+        const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+        const diffMs = Math.max(0, nextMidnight - now);
+
+        const hrs = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+        const mins = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+        const secs = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+
+        const timerEl = document.getElementById('auto-payout-timer');
+        if (timerEl) timerEl.textContent = `${hrs}:${mins}:${secs}`;
+
+        document.querySelectorAll('.plan-countdown-badge').forEach(el => {
+          el.textContent = `${hrs}:${mins}:${secs}`;
+        });
+
+        if (diffMs <= 1000) {
+          processAutomaticMidnightYield().then(() => refreshAllViews());
+        }
+      };
+
+      updateClock();
+      window._midnightInterval = setInterval(updateClock, 1000);
+    }
+
+    let toastTimer = null;
     function showToast(msg) {
       const box = document.getElementById('toast-box');
+      if (!box) return;
       box.textContent = msg;
       box.classList.remove('hidden');
-      clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        box.classList.add('hidden');
+      }, 3600);
     }
+    window.showToast = showToast;
 
     function getCurrentUser() {
       return state.currentUserPhone ? state.users[state.currentUserPhone] : null;
@@ -1049,7 +1202,8 @@
       document.getElementById('auth-gate').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
       switchMainTab('home');
-      refreshAllViews();
+      processAutomaticMidnightYield().then(() => refreshAllViews());
+      startMidnightCountdownTimer();
     }
 
     window.handleLogout = function() {
@@ -1096,43 +1250,47 @@
       container.innerHTML = filtered.map(plan => {
         const totalReturn = plan.daily * plan.days;
         const isSpecial = plan.cat === 'special' || plan.cat === 'vip';
+        const fallbackImg = `https://placehold.co/400x260/4A000D/F3D06B?text=${encodeURIComponent(plan.name)}`;
         return `
-          <div class="bg-white rounded-3xl p-4 border ${isSpecial ? 'border-mayur-gold shadow-md' : 'border-rose-100 shadow-xs'} space-y-3">
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl ${isSpecial ? 'royal-header-bg text-amber-300 border border-mayur-gold' : 'bg-rose-50 text-mayur-red'} flex flex-col items-center justify-center shrink-0">
-                  <i class="fa-solid ${plan.cat === 'vip' ? 'fa-crown' : plan.cat === 'special' ? 'fa-star' : 'fa-chart-pie'} text-base"></i>
-                  <span class="text-[8px] font-black uppercase mt-0.5">${plan.cat}</span>
+          <div class="bg-white rounded-3xl overflow-hidden border ${isSpecial ? 'border-mayur-gold shadow-md' : 'border-rose-100 shadow-xs'}">
+            <!-- Luxury Product Showcase Image Banner -->
+            <div class="relative h-36 w-full bg-slate-900 overflow-hidden">
+              <img src="${plan.img}" alt="${plan.name}" onerror="this.src='${fallbackImg}'" class="w-full h-full object-cover object-center" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"></div>
+              <span class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full ${isSpecial ? 'gold-btn font-black' : 'bg-mayur-red text-white font-extrabold'} text-[10px] uppercase tracking-wider shadow-sm">${plan.badge}</span>
+              <span class="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-amber-200 text-[10px] font-bold uppercase border border-white/15">${plan.cat} Plan</span>
+              <div class="absolute bottom-2.5 left-3 right-3 flex items-end justify-between text-white">
+                <div>
+                  <h4 class="text-sm font-black leading-tight drop-shadow">${plan.name}</h4>
+                  <p class="text-[10px] text-amber-200 font-semibold">Auto-Credit Every Night at 12:00 AM</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[9px] uppercase text-rose-200 font-bold">Price</p>
+                  <p class="text-base font-black text-amber-300 leading-none">₹${plan.price.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3.5 space-y-3">
+              <div class="grid grid-cols-3 gap-2 bg-[#FFF8F8] rounded-2xl p-2.5 text-center border border-rose-100/70">
+                <div>
+                  <p class="text-[10px] text-slate-500 font-semibold">Auto Daily</p>
+                  <p class="text-xs font-extrabold text-slate-800 mt-0.5">₹${plan.daily.toLocaleString('en-IN')}</p>
+                </div>
+                <div class="border-x border-rose-100">
+                  <p class="text-[10px] text-slate-500 font-semibold">Cycle</p>
+                  <p class="text-xs font-extrabold text-slate-800 mt-0.5">${plan.days} Days</p>
                 </div>
                 <div>
-                  <span class="inline-block px-2 py-0.5 rounded-full ${isSpecial ? 'bg-amber-100 text-amber-800' : 'bg-rose-50 text-mayur-red'} text-[9px] font-extrabold uppercase">${plan.badge}</span>
-                  <h4 class="text-sm font-black text-mayur-dark mt-0.5">${plan.name}</h4>
+                  <p class="text-[10px] text-slate-500 font-semibold">Total Est.</p>
+                  <p class="text-xs font-extrabold text-emerald-600 mt-0.5">₹${totalReturn.toLocaleString('en-IN')}</p>
                 </div>
               </div>
-              <div class="text-right">
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Plan Price</p>
-                <p class="text-base font-black text-mayur-red">₹${plan.price.toLocaleString('en-IN')}</p>
-              </div>
-            </div>
 
-            <div class="grid grid-cols-3 gap-2 bg-[#FFF8F8] rounded-2xl p-2.5 text-center border border-rose-100/70">
-              <div>
-                <p class="text-[10px] text-slate-500 font-semibold">Daily Est.</p>
-                <p class="text-xs font-extrabold text-slate-800 mt-0.5">₹${plan.daily.toLocaleString('en-IN')}</p>
-              </div>
-              <div class="border-x border-rose-100">
-                <p class="text-[10px] text-slate-500 font-semibold">Cycle</p>
-                <p class="text-xs font-extrabold text-slate-800 mt-0.5">${plan.days} Days</p>
-              </div>
-              <div>
-                <p class="text-[10px] text-slate-500 font-semibold">Total Est.</p>
-                <p class="text-xs font-extrabold text-emerald-600 mt-0.5">₹${totalReturn.toLocaleString('en-IN')}</p>
-              </div>
+              <button onclick="purchasePlan('${plan.id}')" class="w-full py-2.5 rounded-2xl ${isSpecial ? 'gold-btn font-black' : 'crimson-btn text-white font-extrabold'} text-xs tracking-wide active:scale-98 transition">
+                Activate Product Plan • ₹${plan.price.toLocaleString('en-IN')}
+              </button>
             </div>
-
-            <button onclick="purchasePlan('${plan.id}')" class="w-full py-2.5 rounded-2xl ${isSpecial ? 'gold-btn font-black' : 'crimson-btn text-white font-extrabold'} text-xs tracking-wide active:scale-98 transition">
-              Activate Plan • ₹${plan.price.toLocaleString('en-IN')}
-            </button>
           </div>
         `;
       }).join('');
@@ -1144,6 +1302,21 @@
       const plan = PRODUCT_PLANS.find(p => p.id === planId);
       if (!plan) return;
 
+      // Enforce sequential category sequence: Normal -> Welfare -> VIP
+      const hasNormal = (user.activePlans || []).some(p => p.cat === 'normal');
+      const hasWelfare = (user.activePlans || []).some(p => p.cat === 'welfare');
+
+      if (plan.cat === 'welfare' && !hasNormal) {
+        showToast('Step 1 Required: Please purchase a Normal Plan first before Welfare Plan!');
+        filterPlans('normal');
+        return;
+      }
+      if (plan.cat === 'vip' && (!hasNormal || !hasWelfare)) {
+        showToast('Step 1 & 2 Required: Purchase Normal Plan first, then Welfare Plan before VIP!');
+        filterPlans(!hasNormal ? 'normal' : 'welfare');
+        return;
+      }
+
       if (user.balance < plan.price) {
         showToast(`Insufficient balance (₹${user.balance}). Please recharge ₹${plan.price} via UPI.`);
         openRechargeModal(plan.price);
@@ -1154,12 +1327,13 @@
       user.activePlans.push({
         ...plan,
         purchasedAt: new Date().toLocaleDateString('en-IN'),
+        lastCreditedDateKey: getLocalDateKey(),
         daysClaimed: 0
       });
 
       await saveUserToCloud(user);
       refreshAllViews();
-      showToast(`Activated ${plan.name}! View it in Income tab.`);
+      showToast(`Activated ${plan.name}! Daily yield auto-credits after 12:00 AM.`);
     };
 
     window.claimDailyYield = async function() {
@@ -1311,6 +1485,32 @@
     window.handleWithdrawClick = function() {
       const user = getCurrentUser();
       if (!user) return;
+
+      // Strict 3-Step Withdrawal Gate: Normal -> Welfare -> VIP
+      const plans = user.activePlans || [];
+      const hasNormal = plans.some(p => p.cat === 'normal');
+      const hasWelfare = plans.some(p => p.cat === 'welfare');
+      const hasVip = plans.some(p => p.cat === 'vip');
+
+      if (!hasNormal) {
+        showToast('Withdrawal Locked: Step 1 — Please purchase a Normal Plan first!');
+        switchMainTab('home');
+        filterPlans('normal');
+        return;
+      }
+      if (!hasWelfare) {
+        showToast('Withdrawal Locked: Step 2 — Now purchase a Welfare Plan!');
+        switchMainTab('home');
+        filterPlans('welfare');
+        return;
+      }
+      if (!hasVip) {
+        showToast('Withdrawal Locked: Step 3 — Purchase a VIP Plan to unlock Withdrawals!');
+        switchMainTab('home');
+        filterPlans('vip');
+        return;
+      }
+
       if (!user.bank) {
         showToast('Please link your Bank Account & IFSC first before withdrawing.');
         openBankModal();
@@ -1325,6 +1525,16 @@
       e.preventDefault();
       const user = getCurrentUser();
       if (!user) return;
+
+      // Re-verify 3-Step Rule on submission
+      const plans = user.activePlans || [];
+      const isUnlocked = plans.some(p => p.cat === 'normal') && plans.some(p => p.cat === 'welfare') && plans.some(p => p.cat === 'vip');
+      if (!isUnlocked) {
+        showToast('Withdrawal requires Normal + Welfare + VIP plans active.');
+        closeModal('modal-withdraw');
+        return;
+      }
+
       const amt = Number(document.getElementById('wd-amount').value);
       if (amt < 200) {
         showToast('Minimum withdrawal amount is ₹200.');
@@ -1336,7 +1546,22 @@
       }
 
       user.balance -= amt;
+      const wdObj = {
+        id: 'WD-' + Date.now(),
+        userPhone: user.phone,
+        userName: user.name,
+        amount: amt,
+        bankHolder: user.bank.holder,
+        bankAcc: user.bank.acc,
+        bankIfsc: user.bank.ifsc,
+        status: 'Pending',
+        createdAt: Date.now(),
+        timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      state.withdrawals.unshift(wdObj);
       await saveUserToCloud(user);
+      await saveWithdrawalToCloud(wdObj);
       document.getElementById('wd-amount').value = '';
       closeModal('modal-withdraw');
       refreshAllViews();
@@ -1442,10 +1667,64 @@
       }
       closeModal('modal-admin-pin');
       document.getElementById('admin-upi-input').value = state.upiId;
-      document.getElementById('admin-qr-input').value = state.upiQrUrl;
+      document.getElementById('admin-qr-input').value = state.upiQrUrl || '';
+      const prevWrap = document.getElementById('admin-qr-preview-wrap');
+      const prevImg = document.getElementById('admin-qr-preview-img');
+      if (state.upiQrUrl) {
+        prevImg.src = state.upiQrUrl;
+        prevWrap.classList.remove('hidden');
+        document.getElementById('admin-qr-file-label').textContent = 'Change QR Photo';
+      } else {
+        prevWrap.classList.add('hidden');
+        document.getElementById('admin-qr-file-label').textContent = 'Choose QR Photo from Gallery';
+      }
       renderAdminLists();
       openModal('modal-admin');
       showToast('Admin Panel Unlocked!');
+    };
+
+    window.handleAdminQrFileUpload = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const img = new Image();
+        img.onload = function() {
+          // Compress QR image to 320x320 so it syncs instantaneously via Firebase
+          const c = document.createElement('canvas');
+          const maxDim = 320;
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          } else {
+            if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          c.width = w;
+          c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = c.toDataURL('image/jpeg', 0.82);
+
+          document.getElementById('admin-qr-input').value = compressedDataUrl;
+          document.getElementById('admin-qr-preview-img').src = compressedDataUrl;
+          document.getElementById('admin-qr-preview-wrap').classList.remove('hidden');
+          document.getElementById('admin-qr-file-label').textContent = 'Change QR Photo';
+          showToast('QR Photo selected! Now click Save & Update.');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.clearAdminQrPhoto = function() {
+      document.getElementById('admin-qr-input').value = '';
+      document.getElementById('admin-qr-file').value = '';
+      document.getElementById('admin-qr-preview-wrap').classList.add('hidden');
+      document.getElementById('admin-qr-file-label').textContent = 'Choose QR Photo from Gallery';
+      showToast('Custom QR cleared. Click Save to use auto-QR from UPI ID.');
     };
 
     window.saveAdminUpiSettings = async function(e) {
@@ -1496,38 +1775,79 @@
 
       // 2. Customer Support Messages
       const msgBox = document.getElementById('admin-messages-list');
+      const msgCountBadge = document.getElementById('admin-msg-count');
+      if (msgCountBadge) msgCountBadge.textContent = state.messages.length;
+
       if (state.messages.length === 0) {
         msgBox.innerHTML = `<p class="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl text-center">No customer support messages yet.</p>`;
       } else {
-        msgBox.innerHTML = state.messages.map((m, idx) => `
-          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
-            <div class="flex justify-between">
-              <span class="font-extrabold text-mayur-dark">${m.userName} (+91 ${m.userPhone})</span>
-              <span class="text-[10px] text-slate-400">${m.timeStr}</span>
+        const sortedMsgs = [...state.messages].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        msgBox.innerHTML = sortedMsgs.map((m) => {
+          const origIdx = state.messages.findIndex(item => item.id === m.id);
+          return `
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span class="font-extrabold text-mayur-dark">${m.userName} (+91 ${m.userPhone})</span>
+                <span class="text-[10px] text-slate-400">${m.timeStr}</span>
+              </div>
+              <p class="bg-white p-2 rounded-xl border border-slate-100 font-semibold text-slate-700">${m.text}</p>
+              <div class="flex gap-1.5">
+                <input id="admin-reply-inp-${origIdx}" type="text" value="${m.adminReply || ''}" placeholder="Write reply to member..." class="flex-1 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs bg-white outline-none" />
+                <button onclick="sendAdminReply(${origIdx})" class="px-3 py-1.5 rounded-xl crimson-btn text-white font-bold text-[11px]">Reply</button>
+              </div>
             </div>
-            <p class="bg-white p-2 rounded-xl border border-slate-100 font-semibold text-slate-700">${m.text}</p>
-            <div class="flex gap-1.5">
-              <input id="admin-reply-inp-${idx}" type="text" value="${m.adminReply || ''}" placeholder="Write reply to member..." class="flex-1 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs bg-white outline-none" />
-              <button onclick="sendAdminReply(${idx})" class="px-3 py-1.5 rounded-xl crimson-btn text-white font-bold text-[11px]">Reply</button>
+          `;
+        }).join('');
+      }
+
+      // 3. Withdrawal Requests
+      const wdBox = document.getElementById('admin-withdraw-list');
+      if (wdBox) {
+        if (state.withdrawals.length === 0) {
+          wdBox.innerHTML = `<p class="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl text-center">No withdrawal requests yet.</p>`;
+        } else {
+          wdBox.innerHTML = state.withdrawals.map((w, idx) => `
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="font-extrabold text-slate-800">${w.userName} (+91 ${w.userPhone})</p>
+                  <p class="text-[11px] font-bold text-emerald-700">₹${w.amount} • A/C: ${w.bankAcc} (${w.bankIfsc})</p>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${w.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}">${w.status}</span>
+              </div>
+              ${w.status === 'Pending' ? `
+                <button onclick="markWithdrawalPaid(${idx})" class="w-full py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[11px]">Mark Payout Paid</button>
+              ` : ''}
             </div>
-          </div>
-        `).join('');
+          `).join('');
+        }
       }
     }
 
-    window.processUtrAction = async function(idx, decision) {
-      const req = state.recharges[idx];
-      if (!req || req.status !== 'Pending') return;
-      req.status = decision;
-      await saveRechargeToCloud(req);
+    window.markWithdrawalPaid = async function(idx) {
+      const wd = state.withdrawals[idx];
+      if (!wd) return;
+      wd.status = 'Paid';
+      await saveWithdrawalToCloud(wd);
+      renderAdminLists();
+      showToast(`Withdrawal of ₹${wd.amount} marked as Paid!`);
+    };
 
-      if (decision === 'Approved' && state.users[req.userPhone]) {
-        state.users[req.userPhone].balance += req.amount;
-        await saveUserToCloud(state.users[req.userPhone]);
+    window.processUtrAction = async function(idx, action) {
+      const rech = state.recharges[idx];
+      if (!rech || rech.status !== 'Pending') return;
+      rech.status = action;
+      if (action === 'Approved') {
+        const member = state.users[rech.userPhone];
+        if (member) {
+          member.balance = (member.balance || 0) + Number(rech.amount);
+          await saveUserToCloud(member);
+        }
       }
+      await saveRechargeToCloud(rech);
       renderAdminLists();
       refreshAllViews();
-      showToast(`UTR ${req.utr} marked as ${decision}!`);
+      showToast(`UTR ${rech.utr} marked as ${action}!`);
     };
 
     window.sendAdminReply = async function(idx) {
@@ -1561,6 +1881,13 @@
     function refreshAllViews() {
       renderPlansList();
       updateLiveUpiDisplay();
+      if (!document.getElementById('modal-admin').classList.contains('hidden')) {
+        renderAdminLists();
+      }
+      if (!document.getElementById('modal-support').classList.contains('hidden')) {
+        renderUserSupportThread();
+      }
+
       const user = getCurrentUser();
       if (!user) return;
 
@@ -1580,6 +1907,38 @@
       document.getElementById('inc-daily-est').textContent = dailyEst.toLocaleString('en-IN');
       document.getElementById('inc-total-earned').textContent = (user.totalEarned || 0).toLocaleString('en-IN');
 
+      // Update 3-Step Withdrawal Unlock Checklist
+      const hasNormal = activePlans.some(p => p.cat === 'normal');
+      const hasWelfare = activePlans.some(p => p.cat === 'welfare');
+      const hasVip = activePlans.some(p => p.cat === 'vip');
+      const allUnlocked = hasNormal && hasWelfare && hasVip;
+
+      const setStepUI = (elId, ok, label) => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        if (ok) {
+          el.className = 'p-2 rounded-2xl bg-emerald-50 border border-emerald-200 font-extrabold text-emerald-700';
+          el.innerHTML = `<i class="fa-solid fa-circle-check block mb-1 text-xs"></i>${label}`;
+        } else {
+          el.className = 'p-2 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-500';
+          el.innerHTML = `<i class="fa-solid fa-circle-xmark block mb-1 text-xs"></i>${label}`;
+        }
+      };
+      setStepUI('step-badge-normal', hasNormal, '1. Normal Plan');
+      setStepUI('step-badge-welfare', hasWelfare, '2. Welfare Plan');
+      setStepUI('step-badge-vip', hasVip, '3. VIP Plan');
+
+      const unlockBadge = document.getElementById('wd-unlock-badge');
+      if (unlockBadge) {
+        if (allUnlocked) {
+          unlockBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-extrabold';
+          unlockBadge.textContent = 'Unlocked ✓';
+        } else {
+          unlockBadge.className = 'px-2.5 py-0.5 rounded-full bg-rose-100 text-mayur-red text-[10px] font-extrabold';
+          unlockBadge.textContent = '3 Steps Required';
+        }
+      }
+
       const activeContainer = document.getElementById('active-plans-container');
       if (activePlans.length === 0) {
         activeContainer.innerHTML = `
@@ -1591,14 +1950,15 @@
         `;
       } else {
         activeContainer.innerHTML = activePlans.map(p => `
-          <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-xs flex items-center justify-between">
+          <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-xs flex items-center justify-between gap-2">
             <div>
-              <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase">Active • ${p.daysClaimed}/${p.days} Days</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase">Auto-Active • ${p.daysClaimed}/${p.days} Days</span>
               <h5 class="text-sm font-black text-mayur-dark mt-1">${p.name}</h5>
-              <p class="text-[11px] text-slate-500">Daily Yield: ₹${p.daily} • Purchased: ${p.purchasedAt}</p>
+              <p class="text-[11px] text-slate-500">Auto Daily: ₹${p.daily} • Next Credit in <span class="plan-countdown-badge font-mono font-bold text-mayur-red">--:--:--</span></p>
             </div>
-            <div class="text-right">
+            <div class="text-right shrink-0">
               <p class="text-xs font-black text-mayur-red">₹${p.price}</p>
+              <span class="text-[9px] font-bold text-slate-400">12:00 AM Auto</span>
             </div>
           </div>
         `).join('');
@@ -1608,6 +1968,7 @@
     window.addEventListener('load', () => {
       renderPlansList();
       initCloudSync();
+      startMidnightCountdownTimer();
     });
   </script>
 </body>
