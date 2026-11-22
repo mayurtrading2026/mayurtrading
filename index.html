@@ -770,68 +770,66 @@
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+    const DEFAULT_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCImpzLteaIhA9ktSIqULQJqGNOEylhYws",
+      authDomain: "mayur-trading-20681.firebaseapp.com",
+      projectId: "mayur-trading-20681",
+      storageBucket: "mayur-trading-20681.firebasestorage.app",
+      messagingSenderId: "531462432220",
+      appId: "1:531462432220:web:5545e14aa9cbe9bde4db19",
+      measurementId: "G-REC02QNHGR"
+    };
+
     const PRODUCT_PLANS = [
-      { id: 'norm-1', cat: 'normal', badge: 'NORMAL PLAN', name: 'Mayur Starter Silk Pack', price: 245, daily: 35, days: 30, icon: 'fa-box-open' },
-      { id: 'norm-2', cat: 'normal', badge: 'NORMAL PLAN', name: 'Mayur Heritage Brass Set', price: 690, daily: 105, days: 30, icon: 'fa-award' },
-      { id: 'spec-1', cat: 'special', badge: 'SPECIAL OFFER', name: 'Mayur Festival Special Box', price: 810, daily: 150, days: 25, icon: 'fa-bolt' },
-      { id: 'welf-1', cat: 'welfare', badge: 'WELFARE PLAN', name: 'Mayur Welfare Gold Bundle', price: 5500, daily: 880, days: 35, icon: 'fa-hand-holding-heart' },
-      { id: 'welf-2', cat: 'welfare', badge: 'WELFARE PLAN', name: 'Mayur Welfare Royal Trunk', price: 11200, daily: 1850, days: 35, icon: 'fa-gem' },
-      { id: 'vip-1', cat: 'vip', badge: 'VIP LEVEL 1', name: 'Mayur VIP Sovereign Edition', price: 18000, daily: 3100, days: 40, icon: 'fa-crown' },
-      { id: 'vip-2', cat: 'vip', badge: 'VIP LEVEL 2', name: 'Mayur VIP Imperial Vault', price: 30000, daily: 5400, days: 40, icon: 'fa-chess-queen' },
-      { id: 'vip-3', cat: 'vip', badge: 'VIP LEVEL 3', name: 'Mayur VIP Maharaja Reserve', price: 45000, daily: 8500, days: 45, icon: 'fa-trophy' }
+      // Normal Plans (245 to 35000)
+      { id: 'N1', cat: 'normal', name: 'Mayur Starter Silver', price: 245, daily: 38, days: 18, badge: 'Starter' },
+      { id: 'N2', cat: 'normal', name: 'Mayur Bronze Trade', price: 590, daily: 92, days: 20, badge: 'Popular' },
+      { id: 'N3', cat: 'normal', name: 'Mayur Gold Desk', price: 1450, daily: 230, days: 22, badge: 'Hot' },
+      { id: 'N4', cat: 'normal', name: 'Mayur Emerald Pro', price: 3200, daily: 520, days: 24, badge: 'Trending' },
+      { id: 'N5', cat: 'normal', name: 'Mayur Sapphire Elite', price: 7800, daily: 1300, days: 25, badge: 'Pro' },
+      { id: 'N6', cat: 'normal', name: 'Mayur Ruby Sovereign', price: 16500, daily: 2850, days: 28, badge: 'Elite' },
+      { id: 'N7', cat: 'normal', name: 'Mayur Imperial Crown', price: 35000, daily: 6300, days: 30, badge: 'Max Normal' },
+
+      // Welfare Plans (300 to 25000)
+      { id: 'W1', cat: 'welfare', name: 'Welfare Basic Boost', price: 300, daily: 55, days: 12, badge: 'Welfare' },
+      { id: 'W2', cat: 'welfare', name: 'Welfare Smart Yield', price: 1100, daily: 210, days: 14, badge: 'Welfare' },
+      { id: 'W3', cat: 'welfare', name: 'Welfare Growth Plus', price: 4200, daily: 820, days: 15, badge: 'Welfare' },
+      { id: 'W4', cat: 'welfare', name: 'Welfare Prime Shield', price: 11500, daily: 2300, days: 16, badge: 'Welfare' },
+      { id: 'W5', cat: 'welfare', name: 'Welfare Royal Fund', price: 25000, daily: 5200, days: 18, badge: 'Max Welfare' },
+
+      // VIP Plans (5500 to 45000)
+      { id: 'V1', cat: 'vip', name: 'VIP Diamond I', price: 5500, daily: 1150, days: 20, badge: 'VIP 1' },
+      { id: 'V2', cat: 'vip', name: 'VIP Diamond II', price: 12000, daily: 2600, days: 22, badge: 'VIP 2' },
+      { id: 'V3', cat: 'vip', name: 'VIP Platinum III', price: 24000, daily: 5400, days: 25, badge: 'VIP 3' },
+      { id: 'V4', cat: 'vip', name: 'VIP Maharaja IV', price: 36000, daily: 8300, days: 28, badge: 'VIP 4' },
+      { id: 'V5', cat: 'vip', name: 'VIP Peacock Emperor', price: 45000, daily: 10800, days: 30, badge: 'VIP 5' },
+
+      // Special Plan (810)
+      { id: 'S1', cat: 'special', name: 'Mayur Special Peacock Edition', price: 810, daily: 185, days: 15, badge: 'LIMITED ₹810' }
     ];
 
-    const LOCAL_STORE_KEY = 'mayur_trading_portal_v3';
+    // In-memory state (synchronized with Firestore when online)
+    let state = {
+      users: {},
+      currentUserPhone: null,
+      upiId: 'mayurtrading@upi',
+      upiQrUrl: '',
+      adminPin: 'MAYUR@786',
+      recharges: [],
+      messages: [],
+      activeFilter: 'all',
+      generatedOtp: null
+    };
 
-    function loadLocalBackup() {
-      try {
-        const raw = localStorage.getItem(LOCAL_STORE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          return {
-            settings: {
-              upiId: (parsed.settings && parsed.settings.upiId) || 'mayurtrading@upi',
-              qrUrl: (parsed.settings && parsed.settings.qrUrl) || '',
-              adminPin: (parsed.settings && parsed.settings.adminPin) || 'MAYUR@786'
-            },
-            users: parsed.users || {},
-            deposits: Array.isArray(parsed.deposits) ? parsed.deposits : [],
-            messages: Array.isArray(parsed.messages) ? parsed.messages : []
-          };
-        }
-      } catch (e) {}
-      return {
-        settings: {
-          upiId: 'mayurtrading@upi',
-          qrUrl: '',
-          adminPin: 'MAYUR@786'
-        },
-        users: {},
-        deposits: [],
-        messages: []
-      };
-    }
-
-    function saveLocalBackup() {
-      try {
-        localStorage.setItem(LOCAL_STORE_KEY, JSON.stringify(appState));
-      } catch (e) {}
-    }
-
-    // Live Cloud + Local State
     let cloudDb = null;
     let cloudReady = false;
-    let currentFilter = 'all';
-    let generatedOtp = null;
-    let activeSessionPhone = null;
-    let appState = loadLocalBackup();
-
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'mayur-trading-live';
 
     async function initCloudSync() {
       try {
-        if (typeof __firebase_config === 'undefined' || !__firebase_config) return;
-        const firebaseConfig = JSON.parse(__firebase_config);
+        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
+          ? JSON.parse(__firebase_config)
+          : DEFAULT_FIREBASE_CONFIG;
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         cloudDb = getFirestore(app);
@@ -846,134 +844,101 @@
         cloudReady = true;
 
         // 1. Real-time listener for Daily UPI ID, QR Code & Admin PIN
-        const settingsDocRef = doc(cloudDb, 'artifacts', appId, 'public', 'data', 'config', 'main');
-        onSnapshot(settingsDocRef, (snap) => {
+        const settingsRef = doc(cloudDb, 'artifacts', appId, 'public', 'data', 'settings', 'main');
+        onSnapshot(settingsRef, (snap) => {
           if (snap.exists()) {
-            appState.settings = { ...appState.settings, ...snap.data() };
-            saveLocalBackup();
-            syncLiveUpiDisplay();
+            const d = snap.data();
+            if (d.upiId) state.upiId = d.upiId;
+            if (typeof d.upiQrUrl === 'string') state.upiQrUrl = d.upiQrUrl;
+            if (d.adminPin) state.adminPin = d.adminPin;
+            refreshAllViews();
           }
-        }, () => {});
+        }, (err) => console.warn('Settings sync error:', err));
 
-        // 2. Real-time listener for all Registered Users & Wallets
-        const usersColRef = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'users');
-        onSnapshot(usersColRef, (snap) => {
-          snap.forEach(d => {
-            const data = d.data();
-            if (data.activePlansJson) {
-              try { data.activePlans = JSON.parse(data.activePlansJson); } catch (e) { data.activePlans = []; }
-            }
-            appState.users[d.id] = data;
+        // 2. Real-time listener for Member Accounts
+        const usersCol = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'members');
+        onSnapshot(usersCol, (snap) => {
+          snap.forEach((docSnap) => {
+            state.users[docSnap.id] = docSnap.data();
           });
-          saveLocalBackup();
-          if (activeSessionPhone && appState.users[activeSessionPhone]) {
-            refreshUI();
-          }
-        }, () => {});
+          refreshAllViews();
+        }, (err) => console.warn('Members sync error:', err));
 
-        // 3. Real-time listener for UPI UTR Deposit Requests
-        const depColRef = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'deposits');
-        onSnapshot(depColRef, (snap) => {
-          if (!snap.empty) {
-            const list = [];
-            snap.forEach(d => list.push(d.data()));
-            list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            appState.deposits = list;
-            saveLocalBackup();
-            if (!document.getElementById('modal-recharge').classList.contains('hidden')) renderUserRechargeHistory();
-            if (!document.getElementById('modal-admin').classList.contains('hidden')) renderAdminUtrList();
-          }
-        }, () => {});
+        // 3. Real-time listener for Recharge UTR Requests
+        const rechCol = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'recharges');
+        onSnapshot(rechCol, (snap) => {
+          const list = [];
+          snap.forEach((docSnap) => list.push(docSnap.data()));
+          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          state.recharges = list;
+          refreshAllViews();
+        }, (err) => console.warn('Recharges sync error:', err));
 
-        // 4. Real-time listener for Support Messages
-        const msgColRef = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'messages');
-        onSnapshot(msgColRef, (snap) => {
-          if (!snap.empty) {
-            const list = [];
-            snap.forEach(d => list.push(d.data()));
-            list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-            appState.messages = list;
-            saveLocalBackup();
-            if (!document.getElementById('modal-support').classList.contains('hidden')) renderUserSupportThread();
-            if (!document.getElementById('modal-admin').classList.contains('hidden')) renderAdminMessages();
-          }
-        }, () => {});
-      } catch (e) {}
-    }
+        // 4. Real-time listener for Customer Support Messages
+        const msgCol = collection(cloudDb, 'artifacts', appId, 'public', 'data', 'messages');
+        onSnapshot(msgCol, (snap) => {
+          const list = [];
+          snap.forEach((docSnap) => list.push(docSnap.data()));
+          list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+          state.messages = list;
+          refreshAllViews();
+        }, (err) => console.warn('Messages sync error:', err));
 
-    async function persistSettings() {
-      saveLocalBackup();
-      if (!cloudReady || !cloudDb) return;
-      try {
-        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'config', 'main'), appState.settings);
-      } catch (e) {}
-    }
-
-    async function persistUser(userObj) {
-      appState.users[userObj.phone] = userObj;
-      saveLocalBackup();
-      if (!cloudReady || !cloudDb) return;
-      try {
-        const payload = {
-          ...userObj,
-          activePlansJson: JSON.stringify(userObj.activePlans || [])
-        };
-        delete payload.activePlans;
-        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'users', userObj.phone), payload);
-      } catch (e) {}
-    }
-
-    async function persistDeposit(depObj) {
-      saveLocalBackup();
-      if (!cloudReady || !cloudDb) return;
-      try {
-        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'deposits', depObj.id), depObj);
-      } catch (e) {}
-    }
-
-    async function persistMessage(msgObj) {
-      saveLocalBackup();
-      if (!cloudReady || !cloudDb) return;
-      try {
-        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'messages', msgObj.id), msgObj);
-      } catch (e) {}
-    }
-
-    function syncLiveUpiDisplay() {
-      const settings = appState.settings;
-      const upiEl = document.getElementById('live-upi-id-text');
-      const qrImg = document.getElementById('live-upi-qr-img');
-      if (upiEl) upiEl.textContent = settings.upiId;
-      if (qrImg) {
-        if (settings.qrUrl && settings.qrUrl.trim()) {
-          qrImg.src = settings.qrUrl.trim();
-        } else {
-          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('upi://pay?pa=' + settings.upiId + '&pn=MayurTrading')}`;
-        }
+      } catch (e) {
+        console.warn('Running in standalone mode:', e);
       }
     }
 
-    window.showToast = function (msg) {
+    async function saveUserToCloud(userObj) {
+      if (!cloudReady || !cloudDb || !userObj?.phone) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'members', userObj.phone), userObj);
+      } catch (e) { console.warn('Save user failed:', e); }
+    }
+
+    async function saveSettingsToCloud() {
+      if (!cloudReady || !cloudDb) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'settings', 'main'), {
+          upiId: state.upiId,
+          upiQrUrl: state.upiQrUrl,
+          adminPin: state.adminPin
+        });
+      } catch (e) { console.warn('Save settings failed:', e); }
+    }
+
+    async function saveRechargeToCloud(rechObj) {
+      if (!cloudReady || !cloudDb) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'recharges', rechObj.id), rechObj);
+      } catch (e) { console.warn('Save recharge failed:', e); }
+    }
+
+    async function saveMessageToCloud(msgObj) {
+      if (!cloudReady || !cloudDb) return;
+      try {
+        await setDoc(doc(cloudDb, 'artifacts', appId, 'public', 'data', 'messages', msgObj.id), msgObj);
+      } catch (e) { console.warn('Save message failed:', e); }
+    }
+
+    // Helper: Toast Notification
+    function showToast(msg) {
       const box = document.getElementById('toast-box');
       box.textContent = msg;
       box.classList.remove('hidden');
-      clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
-    };
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
+    }
 
-    window.openModal = function (id) {
-      document.getElementById(id).classList.remove('hidden');
-    };
+    function getCurrentUser() {
+      return state.currentUserPhone ? state.users[state.currentUserPhone] : null;
+    }
 
-    window.closeModal = function (id) {
-      document.getElementById(id).classList.add('hidden');
-    };
-
-    // AUTHENTICATION TABS & HANDLERS
-    window.switchAuthTab = function (tab) {
+    // Auth Tabs
+    window.switchAuthTab = function(tab) {
       ['login', 'register', 'otp'].forEach(t => {
-        document.getElementById('form-' + t).classList.toggle('hidden', t !== tab);
-        const btn = document.getElementById('tab-' + t);
+        document.getElementById(`form-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tab-${t}`);
         if (t === tab) {
           btn.className = 'py-2 rounded-xl text-xs font-extrabold bg-mayur-red text-white shadow-sm transition';
         } else {
@@ -982,7 +947,7 @@
       });
     };
 
-    window.handleRegisterSubmit = async function (e) {
+    window.handleRegisterSubmit = async function(e) {
       e.preventDefault();
       const name = document.getElementById('reg-name').value.trim();
       const phone = document.getElementById('reg-phone').value.trim();
@@ -993,8 +958,7 @@
         showToast('Please enter a valid 10-digit mobile number.');
         return;
       }
-
-      if (appState.users[phone]) {
+      if (state.users[phone]) {
         showToast('Mobile number already registered. Please Login.');
         switchAuthTab('login');
         return;
@@ -1013,288 +977,261 @@
         bank: null,
         lastSpinDate: ''
       };
-      await persistUser(newUser);
-      activeSessionPhone = phone;
-      showToast('Account created successfully! Welcome to Mayur Trading.');
-      enterPortal();
+
+      state.users[phone] = newUser;
+      state.currentUserPhone = phone;
+      await saveUserToCloud(newUser);
+      enterAppShell();
+      showToast(`Welcome ${name}! Account created successfully.`);
     };
 
-    window.handleLoginSubmit = function (e) {
+    window.handleLoginSubmit = function(e) {
       e.preventDefault();
       const phone = document.getElementById('login-phone').value.trim();
       const pass = document.getElementById('login-pass').value;
 
-      if (!appState.users[phone]) {
+      const user = state.users[phone];
+      if (!user) {
         showToast('Account not found. Please Register first.');
-        switchAuthTab('register');
-        document.getElementById('reg-phone').value = phone;
+        return;
+      }
+      if (user.pass !== pass) {
+        showToast('Incorrect password. Try again or use OTP Reset.');
         return;
       }
 
-      if (appState.users[phone].pass !== pass) {
-        showToast('Incorrect password. Use OTP Reset if forgotten.');
-        return;
-      }
-
-      activeSessionPhone = phone;
-      showToast('Login successful!');
-      enterPortal();
+      state.currentUserPhone = phone;
+      enterAppShell();
+      showToast(`Welcome back, ${user.name}!`);
     };
 
-    window.sendMockOtp = function () {
+    window.sendMockOtp = function() {
       const phone = document.getElementById('otp-phone').value.trim();
       if (!/^\d{10}$/.test(phone)) {
-        showToast('Enter a valid 10-digit mobile number.');
+        showToast('Enter a valid 10-digit registered mobile number first.');
         return;
       }
-      if (!appState.users[phone]) {
+      if (!state.users[phone]) {
         showToast('This mobile number is not registered.');
         return;
       }
-      generatedOtp = String(Math.floor(100000 + Math.random() * 900000));
-      document.getElementById('otp-generated-code').textContent = generatedOtp;
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      state.generatedOtp = otp;
+      document.getElementById('otp-generated-code').textContent = otp;
       document.getElementById('otp-display-box').classList.remove('hidden');
-      showToast('6-Digit OTP generated on screen!');
+      showToast('6-digit OTP generated on screen!');
     };
 
-    window.handleOtpReset = async function (e) {
+    window.handleOtpReset = async function(e) {
       e.preventDefault();
       const phone = document.getElementById('otp-phone').value.trim();
       const code = document.getElementById('otp-code').value.trim();
       const newPass = document.getElementById('otp-newpass').value;
 
-      if (!appState.users[phone]) {
-        showToast('Mobile number not found.');
+      if (!state.users[phone]) {
+        showToast('Mobile number not registered.');
         return;
       }
-      if (!generatedOtp || code !== generatedOtp) {
-        showToast('Invalid 6-digit OTP. Click Send OTP first.');
+      if (!state.generatedOtp || code !== state.generatedOtp) {
+        showToast('Invalid 6-digit OTP. Please click Send OTP first.');
         return;
       }
 
-      appState.users[phone].pass = newPass;
-      await persistUser(appState.users[phone]);
-      generatedOtp = null;
+      state.users[phone].pass = newPass;
+      state.generatedOtp = null;
+      await saveUserToCloud(state.users[phone]);
       document.getElementById('otp-display-box').classList.add('hidden');
-      showToast('Password reset successful! Please sign in.');
       switchAuthTab('login');
+      showToast('Password reset successful! Please sign in.');
     };
 
-    window.handleLogout = function () {
-      activeSessionPhone = null;
+    function enterAppShell() {
+      document.getElementById('auth-gate').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+      switchMainTab('home');
+      refreshAllViews();
+    }
+
+    window.handleLogout = function() {
+      state.currentUserPhone = null;
       document.getElementById('app-shell').classList.add('hidden');
       document.getElementById('auth-gate').classList.remove('hidden');
       showToast('Logged out securely.');
     };
 
-    function getCurrentUser() {
-      if (!activeSessionPhone) return null;
-      return appState.users[activeSessionPhone] || null;
-    }
-
-    function enterPortal() {
-      const user = getCurrentUser();
-      if (!user) return;
-      document.getElementById('auth-gate').classList.add('hidden');
-      document.getElementById('app-shell').classList.remove('hidden');
-      refreshUI();
-    }
-
-    function refreshUI() {
-      const user = getCurrentUser();
-      if (!user) return;
-
-      document.getElementById('top-mini-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
-      document.getElementById('inc-wallet-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
-      document.getElementById('prof-wallet-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
-
-      document.getElementById('prof-user-name').textContent = user.name;
-      document.getElementById('prof-user-phone').textContent = '+91 ' + user.phone;
-      document.getElementById('prof-user-id').textContent = user.id;
-      document.getElementById('team-ref-code').textContent = user.refCode;
-
-      if (user.bank) {
-        document.getElementById('prof-bank-status').textContent = 'A/C ••••' + user.bank.acc.slice(-4);
-      } else {
-        document.getElementById('prof-bank-status').textContent = 'Not Linked';
-      }
-
-      const activeList = user.activePlans || [];
-      const dailyEst = activeList.reduce((sum, p) => sum + p.daily, 0);
-      document.getElementById('inc-active-count').textContent = activeList.length;
-      document.getElementById('inc-daily-est').textContent = dailyEst.toLocaleString('en-IN');
-      document.getElementById('inc-total-earned').textContent = (user.totalEarned || 0).toLocaleString('en-IN');
-
-      renderPlans();
-      renderActivePlans();
-    }
-
-    // MAIN NAVIGATION TABS
-    window.switchMainTab = function (tab) {
+    // Main Bottom Navigation
+    window.switchMainTab = function(tab) {
       ['home', 'income', 'team', 'profile'].forEach(t => {
-        document.getElementById('view-' + t).classList.toggle('hidden', t !== tab);
-        const navBtn = document.getElementById('nav-' + t);
+        document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
+        const navBtn = document.getElementById(`nav-${t}`);
         if (t === tab) {
           navBtn.className = 'flex flex-col items-center gap-1 text-mayur-red font-extrabold';
         } else {
           navBtn.className = 'flex flex-col items-center gap-1 text-slate-400 font-bold';
         }
       });
-      refreshUI();
+      refreshAllViews();
     };
 
-    // RENDER PRODUCT PLANS
-    window.filterPlans = function (cat) {
-      currentFilter = cat;
+    // Render Product Plans
+    window.filterPlans = function(cat) {
+      state.activeFilter = cat;
       ['all', 'normal', 'welfare', 'vip', 'special'].forEach(c => {
-        const btn = document.getElementById('cat-' + c);
+        const btn = document.getElementById(`cat-${c}`);
         if (c === cat) {
           btn.className = 'px-4 py-2 rounded-full text-xs font-extrabold bg-mayur-red text-white shadow-xs whitespace-nowrap';
         } else {
           btn.className = 'px-4 py-2 rounded-full text-xs font-bold bg-white text-slate-700 border border-rose-100 whitespace-nowrap';
         }
       });
-      renderPlans();
+      renderPlansList();
     };
 
-    function renderPlans() {
-      const list = document.getElementById('plans-list');
-      const filtered = currentFilter === 'all' ? PRODUCT_PLANS : PRODUCT_PLANS.filter(p => p.cat === currentFilter);
+    function renderPlansList() {
+      const container = document.getElementById('plans-list');
+      const filtered = state.activeFilter === 'all'
+        ? PRODUCT_PLANS
+        : PRODUCT_PLANS.filter(p => p.cat === state.activeFilter);
 
-      list.innerHTML = filtered.map(plan => `
-        <div class="bg-white rounded-3xl p-4 border border-rose-100 shadow-xs space-y-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl royal-header-bg border border-mayur-gold flex items-center justify-center text-amber-300 text-lg shrink-0">
-                <i class="fa-solid ${plan.icon}"></i>
+      container.innerHTML = filtered.map(plan => {
+        const totalReturn = plan.daily * plan.days;
+        const isSpecial = plan.cat === 'special' || plan.cat === 'vip';
+        return `
+          <div class="bg-white rounded-3xl p-4 border ${isSpecial ? 'border-mayur-gold shadow-md' : 'border-rose-100 shadow-xs'} space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl ${isSpecial ? 'royal-header-bg text-amber-300 border border-mayur-gold' : 'bg-rose-50 text-mayur-red'} flex flex-col items-center justify-center shrink-0">
+                  <i class="fa-solid ${plan.cat === 'vip' ? 'fa-crown' : plan.cat === 'special' ? 'fa-star' : 'fa-chart-pie'} text-base"></i>
+                  <span class="text-[8px] font-black uppercase mt-0.5">${plan.cat}</span>
+                </div>
+                <div>
+                  <span class="inline-block px-2 py-0.5 rounded-full ${isSpecial ? 'bg-amber-100 text-amber-800' : 'bg-rose-50 text-mayur-red'} text-[9px] font-extrabold uppercase">${plan.badge}</span>
+                  <h4 class="text-sm font-black text-mayur-dark mt-0.5">${plan.name}</h4>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Plan Price</p>
+                <p class="text-base font-black text-mayur-red">₹${plan.price.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 bg-[#FFF8F8] rounded-2xl p-2.5 text-center border border-rose-100/70">
+              <div>
+                <p class="text-[10px] text-slate-500 font-semibold">Daily Est.</p>
+                <p class="text-xs font-extrabold text-slate-800 mt-0.5">₹${plan.daily.toLocaleString('en-IN')}</p>
+              </div>
+              <div class="border-x border-rose-100">
+                <p class="text-[10px] text-slate-500 font-semibold">Cycle</p>
+                <p class="text-xs font-extrabold text-slate-800 mt-0.5">${plan.days} Days</p>
               </div>
               <div>
-                <span class="inline-block px-2 py-0.5 rounded-full bg-rose-50 text-mayur-red text-[9px] font-black uppercase tracking-wider">${plan.badge}</span>
-                <h4 class="text-sm font-extrabold text-slate-800 mt-0.5">${plan.name}</h4>
+                <p class="text-[10px] text-slate-500 font-semibold">Total Est.</p>
+                <p class="text-xs font-extrabold text-emerald-600 mt-0.5">₹${totalReturn.toLocaleString('en-IN')}</p>
               </div>
             </div>
-            <div class="text-right">
-              <p class="text-[10px] font-bold text-slate-400 uppercase">Price</p>
-              <p class="text-base font-black text-mayur-red">₹${plan.price.toLocaleString('en-IN')}</p>
-            </div>
+
+            <button onclick="purchasePlan('${plan.id}')" class="w-full py-2.5 rounded-2xl ${isSpecial ? 'gold-btn font-black' : 'crimson-btn text-white font-extrabold'} text-xs tracking-wide active:scale-98 transition">
+              Activate Plan • ₹${plan.price.toLocaleString('en-IN')}
+            </button>
           </div>
-
-          <div class="grid grid-cols-3 gap-2 bg-rose-50/60 rounded-2xl p-2.5 text-center">
-            <div>
-              <p class="text-[10px] text-slate-500 font-semibold">Est. Daily</p>
-              <p class="text-xs font-black text-emerald-600">₹${plan.daily.toLocaleString('en-IN')}</p>
-            </div>
-            <div>
-              <p class="text-[10px] text-slate-500 font-semibold">Cycle</p>
-              <p class="text-xs font-black text-slate-800">${plan.days} Days</p>
-            </div>
-            <div>
-              <p class="text-[10px] text-slate-500 font-semibold">Est. Total</p>
-              <p class="text-xs font-black text-mayur-dark">₹${(plan.daily * plan.days).toLocaleString('en-IN')}</p>
-            </div>
-          </div>
-
-          <p class="text-[10px] text-slate-500 leading-snug">
-            Disclaimer: We are product traders only and do not guarantee fixed returns. Please purchase plans at your own risk and exercise patience—everyone's funds remain safe.
-          </p>
-
-          <button onclick="buyProductPlan('${plan.id}')" class="w-full py-2.5 rounded-2xl crimson-btn text-white text-xs font-extrabold tracking-wide active:scale-98 transition">
-            Buy Plan • ₹${plan.price.toLocaleString('en-IN')}
-          </button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    window.buyProductPlan = async function (planId) {
+    window.purchasePlan = async function(planId) {
       const user = getCurrentUser();
+      if (!user) return;
       const plan = PRODUCT_PLANS.find(p => p.id === planId);
-      if (!user || !plan) return;
+      if (!plan) return;
 
-      if ((user.balance || 0) < plan.price) {
-        showToast(`Insufficient wallet balance (₹${user.balance || 0}). Please Recharge ₹${plan.price - (user.balance || 0)} more.`);
+      if (user.balance < plan.price) {
+        showToast(`Insufficient balance (₹${user.balance}). Please recharge ₹${plan.price} via UPI.`);
         openRechargeModal(plan.price);
         return;
       }
 
       user.balance -= plan.price;
-      user.activePlans = user.activePlans || [];
       user.activePlans.push({
         ...plan,
-        purchasedAt: new Date().toLocaleDateString('en-IN')
+        purchasedAt: new Date().toLocaleDateString('en-IN'),
+        daysClaimed: 0
       });
-      await persistUser(user);
-      refreshUI();
+
+      await saveUserToCloud(user);
+      refreshAllViews();
       showToast(`Activated ${plan.name}! View it in Income tab.`);
     };
 
-    function renderActivePlans() {
+    window.claimDailyYield = async function() {
       const user = getCurrentUser();
-      const container = document.getElementById('active-plans-container');
-      const activeList = user ? (user.activePlans || []) : [];
-      if (activeList.length === 0) {
-        container.innerHTML = `
-          <div class="bg-white rounded-3xl p-6 text-center border border-rose-100">
-            <i class="fa-solid fa-box-open text-2xl text-slate-300 mb-2"></i>
-            <p class="text-xs font-bold text-slate-500">No active plans yet. Select a plan from Home to begin.</p>
-          </div>`;
+      if (!user) return;
+      if (!user.activePlans || user.activePlans.length === 0) {
+        showToast('No active plans yet. Activate a plan first!');
         return;
       }
 
-      container.innerHTML = activeList.map(p => `
-        <div class="bg-white rounded-2xl p-3.5 border border-rose-100 flex items-center justify-between">
-          <div>
-            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Active • ${p.purchasedAt}</span>
-            <h5 class="text-xs font-extrabold text-slate-800 mt-1">${p.name}</h5>
-            <p class="text-[11px] text-slate-500">Invested: ₹${p.price.toLocaleString('en-IN')} • Est. Daily: ₹${p.daily}</p>
-          </div>
-          <span class="text-xs font-black text-emerald-600">+₹${p.daily}/day</span>
-        </div>
-      `).join('');
-    }
+      let payout = 0;
+      user.activePlans.forEach(p => {
+        if (p.daysClaimed < p.days) {
+          payout += p.daily;
+          p.daysClaimed += 1;
+        }
+      });
 
-    window.claimDailyYield = async function () {
-      const user = getCurrentUser();
-      const activeList = user ? (user.activePlans || []) : [];
-      if (!user || activeList.length === 0) {
-        showToast('Activate at least one product plan to collect daily yield.');
+      if (payout <= 0) {
+        showToast('All active plan cycles are completed.');
         return;
       }
-      const dailyTotal = activeList.reduce((sum, p) => sum + p.daily, 0);
-      user.balance = (user.balance || 0) + dailyTotal;
-      user.totalEarned = (user.totalEarned || 0) + dailyTotal;
-      await persistUser(user);
-      refreshUI();
-      showToast(`₹${dailyTotal.toLocaleString('en-IN')} added to your wallet!`);
+
+      user.balance += payout;
+      user.totalEarned += payout;
+      await saveUserToCloud(user);
+      refreshAllViews();
+      showToast(`Collected ₹${payout.toLocaleString('en-IN')} daily yield to your wallet!`);
     };
 
-    // UPI RECHARGE & ADMIN APPROVAL
-    window.openRechargeModal = function (prefillAmount) {
-      syncLiveUpiDisplay();
-      if (prefillAmount) {
-        document.getElementById('rech-amount').value = prefillAmount;
-      }
+    // Modals Helper
+    window.openModal = function(id) {
+      document.getElementById(id).classList.remove('hidden');
+    };
+    window.closeModal = function(id) {
+      document.getElementById(id).classList.add('hidden');
+    };
+
+    // Recharge & UTR
+    window.openRechargeModal = function(presetAmt) {
+      if (presetAmt) document.getElementById('rech-amount').value = presetAmt;
+      updateLiveUpiDisplay();
       renderUserRechargeHistory();
       openModal('modal-recharge');
     };
 
-    window.setRechargeAmount = function (amt) {
+    window.setRechargeAmount = function(amt) {
       document.getElementById('rech-amount').value = amt;
+      updateLiveUpiDisplay();
     };
 
-    window.copyUpiId = function () {
-      const text = document.getElementById('live-upi-id-text').textContent;
-      const temp = document.createElement('textarea');
-      temp.value = text;
-      document.body.appendChild(temp);
-      temp.select();
-      document.execCommand('copy');
-      document.body.removeChild(temp);
-      showToast('UPI ID copied: ' + text);
+    function updateLiveUpiDisplay() {
+      document.getElementById('live-upi-id-text').textContent = state.upiId;
+      const amt = document.getElementById('rech-amount')?.value || '';
+      const qrImg = document.getElementById('live-upi-qr-img');
+      if (state.upiQrUrl && state.upiQrUrl.trim() !== '') {
+        qrImg.src = state.upiQrUrl.trim();
+      } else {
+        const upiUri = `upi://pay?pa=${encodeURIComponent(state.upiId)}&pn=${encodeURIComponent('Mayur Trading Company')}${amt ? `&am=${amt}` : ''}&cu=INR`;
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
+      }
+    }
+
+    window.copyUpiId = function() {
+      copyToClipboard(state.upiId);
+      showToast(`Copied UPI ID: ${state.upiId}`);
     };
 
-    window.submitUtrDeposit = async function (e) {
+    window.submitUtrDeposit = async function(e) {
       e.preventDefault();
       const user = getCurrentUser();
+      if (!user) return;
       const amount = Number(document.getElementById('rech-amount').value);
       const utr = document.getElementById('rech-utr').value.trim();
 
@@ -1302,47 +1239,51 @@
         showToast('Please enter a valid 12-digit numeric UTR number.');
         return;
       }
+      if (state.recharges.some(r => r.utr === utr)) {
+        showToast('This UTR number has already been submitted.');
+        return;
+      }
 
-      const newDep = {
-        id: 'DEP-' + Date.now(),
-        phone: user.phone,
+      const newRech = {
+        id: 'UTR-' + Date.now(),
+        userPhone: user.phone,
         userName: user.name,
         amount,
         utr,
         status: 'Pending',
         createdAt: Date.now(),
-        time: new Date().toLocaleString('en-IN')
+        timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      appState.deposits.unshift(newDep);
-      await persistDeposit(newDep);
+
+      state.recharges.unshift(newRech);
+      await saveRechargeToCloud(newRech);
       document.getElementById('rech-utr').value = '';
       renderUserRechargeHistory();
-      showToast('UTR submitted! Admin will approve shortly.');
+      showToast('UTR submitted! Wallet will update once Admin approves.');
     };
 
     function renderUserRechargeHistory() {
       const user = getCurrentUser();
-      const deposits = appState.deposits.filter(d => d.phone === user.phone);
       const box = document.getElementById('user-recharge-history');
-
-      if (deposits.length === 0) {
-        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No recharge requests yet.</p>';
+      if (!user) return;
+      const mine = state.recharges.filter(r => r.userPhone === user.phone);
+      if (mine.length === 0) {
+        box.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">No recharge requests yet.</p>`;
         return;
       }
-
-      box.innerHTML = deposits.map(d => `
+      box.innerHTML = mine.map(r => `
         <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
           <div>
-            <p class="font-extrabold text-slate-800">₹${d.amount.toLocaleString('en-IN')} • UTR: ${d.utr}</p>
-            <p class="text-[10px] text-slate-400">${d.time}</p>
+            <p class="font-extrabold text-slate-800">₹${r.amount} • <span class="font-mono text-[11px] text-slate-500">${r.utr}</span></p>
+            <p class="text-[10px] text-slate-400">${r.timeStr}</p>
           </div>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${d.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}">${d.status}</span>
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : r.status === 'Rejected' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}">${r.status}</span>
         </div>
       `).join('');
     }
 
-    // BANK ACCOUNT & WITHDRAWAL
-    window.openBankModal = function () {
+    // Bank & Withdrawal Gate
+    window.openBankModal = function() {
       const user = getCurrentUser();
       if (user && user.bank) {
         document.getElementById('bank-holder').value = user.bank.holder;
@@ -1352,118 +1293,110 @@
       openModal('modal-bank');
     };
 
-    window.saveBankDetails = async function (e) {
+    window.saveBankDetails = async function(e) {
       e.preventDefault();
       const user = getCurrentUser();
+      if (!user) return;
       user.bank = {
         holder: document.getElementById('bank-holder').value.trim(),
         acc: document.getElementById('bank-acc').value.trim(),
         ifsc: document.getElementById('bank-ifsc').value.trim().toUpperCase()
       };
-      await persistUser(user);
-      refreshUI();
+      await saveUserToCloud(user);
       closeModal('modal-bank');
-      showToast('Bank Account & IFSC saved successfully!');
+      refreshAllViews();
+      showToast('Bank account & IFSC saved successfully!');
     };
 
-    window.handleWithdrawClick = function () {
+    window.handleWithdrawClick = function() {
       const user = getCurrentUser();
       if (!user) return;
-
       if (!user.bank) {
-        showToast('Please save your Bank Account Number & IFSC first.');
+        showToast('Please link your Bank Account & IFSC first before withdrawing.');
         openBankModal();
         return;
       }
-
-      document.getElementById('wd-avail-bal').textContent = (user.balance || 0).toLocaleString('en-IN');
-      document.getElementById('wd-bank-summary').textContent = `A/C: ${user.bank.acc} | IFSC: ${user.bank.ifsc}`;
+      document.getElementById('wd-avail-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('wd-bank-summary').textContent = `${user.bank.holder} • A/C: ${user.bank.acc} (${user.bank.ifsc})`;
       openModal('modal-withdraw');
     };
 
-    window.submitWithdrawal = async function (e) {
+    window.submitWithdrawal = async function(e) {
       e.preventDefault();
       const user = getCurrentUser();
+      if (!user) return;
       const amt = Number(document.getElementById('wd-amount').value);
-
       if (amt < 200) {
         showToast('Minimum withdrawal amount is ₹200.');
         return;
       }
-      if (amt > (user.balance || 0)) {
-        showToast('Insufficient wallet balance.');
+      if (amt > user.balance) {
+        showToast('Withdrawal amount exceeds your available wallet balance.');
         return;
       }
 
       user.balance -= amt;
-      await persistUser(user);
-      refreshUI();
+      await saveUserToCloud(user);
+      document.getElementById('wd-amount').value = '';
       closeModal('modal-withdraw');
-      showToast(`Withdrawal request of ₹${amt.toLocaleString('en-IN')} submitted to ${user.bank.acc}!`);
+      refreshAllViews();
+      showToast(`Withdrawal of ₹${amt} submitted to ${user.bank.acc}!`);
     };
 
-    // LUCKY SPIN & REFERRAL
-    window.triggerLuckySpin = function () {
+    // Lucky Spin
+    window.triggerLuckySpin = function() {
       const user = getCurrentUser();
+      if (!user) return;
       const today = new Date().toDateString();
       if (user.lastSpinDate === today) {
-        showToast('You already claimed your daily spin today. Come back tomorrow!');
+        showToast('You already used today’s Lucky Spin! Come back tomorrow.');
         return;
       }
-
       const disc = document.getElementById('spin-wheel-disc');
+      const btn = document.getElementById('btn-spin-now');
+      btn.disabled = true;
       disc.classList.add('wheel-spinning');
-      document.getElementById('btn-spin-now').disabled = true;
 
       setTimeout(async () => {
         disc.classList.remove('wheel-spinning');
-        document.getElementById('btn-spin-now').disabled = false;
-        const rewards = [15, 25, 50, 75, 100];
+        btn.disabled = false;
+        const rewards = [15, 25, 35, 50, 75, 100];
         const won = rewards[Math.floor(Math.random() * rewards.length)];
-        user.balance = (user.balance || 0) + won;
+        user.balance += won;
         user.lastSpinDate = today;
-        await persistUser(user);
-        refreshUI();
+        await saveUserToCloud(user);
+        refreshAllViews();
         closeModal('modal-spin');
         showToast(`Congratulations! You won ₹${won} Lucky Spin bonus!`);
-      }, 3200);
+      }, 3250);
     };
 
-    window.copyReferralCode = function () {
-      const code = document.getElementById('team-ref-code').textContent;
-      const temp = document.createElement('textarea');
-      temp.value = code;
-      document.body.appendChild(temp);
-      temp.select();
-      document.execCommand('copy');
-      document.body.removeChild(temp);
-      showToast('Referral code copied: ' + code);
-    };
-
-    // SUPPORT CHAT BOX
-    window.openSupportModal = function () {
+    // Live Support Chat Box
+    window.openSupportModal = function() {
       renderUserSupportThread();
       openModal('modal-support');
     };
 
-    window.sendSupportMessage = async function (e) {
+    window.sendSupportMessage = async function(e) {
       e.preventDefault();
       const user = getCurrentUser();
+      if (!user) return;
       const input = document.getElementById('support-msg-input');
       const text = input.value.trim();
       if (!text) return;
 
       const msgObj = {
         id: 'MSG-' + Date.now(),
-        phone: user.phone,
+        userPhone: user.phone,
         userName: user.name,
         text,
-        reply: '',
+        adminReply: '',
         createdAt: Date.now(),
-        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+        timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      appState.messages.push(msgObj);
-      await persistMessage(msgObj);
+
+      state.messages.push(msgObj);
+      await saveMessageToCloud(msgObj);
       input.value = '';
       renderUserSupportThread();
       showToast('Message sent to Admin!');
@@ -1471,149 +1404,211 @@
 
     function renderUserSupportThread() {
       const user = getCurrentUser();
-      const msgs = appState.messages.filter(m => m.phone === user.phone);
       const box = document.getElementById('user-support-thread');
-
-      if (msgs.length === 0) {
-        box.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">No messages yet. Write your query below to chat with Admin.</p>';
+      if (!user) return;
+      const mine = state.messages.filter(m => m.userPhone === user.phone);
+      if (mine.length === 0) {
+        box.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Write your question or UTR issue below. Admin will reply directly here.</p>`;
         return;
       }
-
-      box.innerHTML = msgs.map(m => `
+      box.innerHTML = mine.map(m => `
         <div class="space-y-1.5">
-          <div class="bg-mayur-red text-white rounded-2xl rounded-tr-xs px-3 py-2 text-xs ml-8">
-            <p>${m.text}</p>
-            <span class="block text-[9px] text-rose-200 text-right mt-0.5">${m.time}</span>
+          <div class="bg-mayur-red text-white rounded-2xl rounded-br-xs px-3 py-2 text-xs ml-6">
+            <p class="font-semibold">${m.text}</p>
+            <p class="text-[9px] text-rose-100 text-right mt-0.5">${m.timeStr}</p>
           </div>
-          ${m.reply ? `
-            <div class="bg-white border border-amber-200 text-slate-800 rounded-2xl rounded-tl-xs px-3 py-2 text-xs mr-8">
-              <span class="text-[9px] font-black text-amber-700 uppercase block">Admin Reply:</span>
-              <p class="mt-0.5">${m.reply}</p>
+          ${m.adminReply ? `
+            <div class="bg-white border border-amber-300 text-slate-800 rounded-2xl rounded-bl-xs px-3 py-2 text-xs mr-6 shadow-2xs">
+              <p class="text-[10px] font-black text-amber-800 uppercase mb-0.5"><i class="fa-solid fa-shield-halved mr-1"></i> Admin Reply</p>
+              <p class="font-semibold">${m.adminReply}</p>
             </div>
-          ` : ''}
+          ` : `<p class="text-[10px] text-slate-400 italic ml-1">Waiting for Admin reply...</p>`}
         </div>
       `).join('');
     }
 
-    // ADMIN PIN GATE & CONTROL PANEL
-    window.openAdminGate = function () {
+    // Admin PIN Gate & Owner Control Panel
+    window.openAdminGate = function() {
       document.getElementById('admin-pin-input').value = '';
       openModal('modal-admin-pin');
     };
 
-    window.verifyAdminPin = function (e) {
+    window.verifyAdminPin = function(e) {
       e.preventDefault();
       const entered = document.getElementById('admin-pin-input').value.trim();
-      if (entered !== appState.settings.adminPin) {
-        showToast('Incorrect Admin Secret PIN!');
+      if (entered !== state.adminPin) {
+        showToast('Access Denied: Incorrect Secret Admin PIN.');
         return;
       }
       closeModal('modal-admin-pin');
-      openAdminPanel();
-    };
-
-    window.openAdminPanel = function () {
-      document.getElementById('admin-upi-input').value = appState.settings.upiId;
-      document.getElementById('admin-qr-input').value = appState.settings.qrUrl || '';
-      renderAdminUtrList();
-      renderAdminMessages();
+      document.getElementById('admin-upi-input').value = state.upiId;
+      document.getElementById('admin-qr-input').value = state.upiQrUrl;
+      renderAdminLists();
       openModal('modal-admin');
+      showToast('Admin Panel Unlocked!');
     };
 
-    window.saveAdminUpiSettings = async function (e) {
+    window.saveAdminUpiSettings = async function(e) {
       e.preventDefault();
-      appState.settings.upiId = document.getElementById('admin-upi-input').value.trim();
-      appState.settings.qrUrl = document.getElementById('admin-qr-input').value.trim();
-      syncLiveUpiDisplay();
-      await persistSettings();
-      showToast('Live UPI ID & QR Code updated for all users!');
+      state.upiId = document.getElementById('admin-upi-input').value.trim();
+      state.upiQrUrl = document.getElementById('admin-qr-input').value.trim();
+      await saveSettingsToCloud();
+      updateLiveUpiDisplay();
+      showToast('Live UPI ID & QR Code updated for all members!');
     };
 
-    function renderAdminUtrList() {
-      const box = document.getElementById('admin-utr-list');
-      if (appState.deposits.length === 0) {
-        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No UPI recharge requests yet.</p>';
-        return;
-      }
-
-      box.innerHTML = appState.deposits.map(d => `
-        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
-          <div>
-            <p class="font-extrabold text-slate-800">${d.userName} (${d.phone})</p>
-            <p class="text-[11px] font-bold text-mayur-red">₹${d.amount.toLocaleString('en-IN')} • UTR: ${d.utr}</p>
-          </div>
-          ${d.status === 'Pending'
-            ? `<button onclick="approveDeposit('${d.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-extrabold">Approve</button>`
-            : `<span class="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[10px] font-extrabold">Approved</span>`}
-        </div>
-      `).join('');
-    }
-
-    window.approveDeposit = async function (depId) {
-      const idx = appState.deposits.findIndex(d => d.id === depId);
-      if (idx === -1 || appState.deposits[idx].status === 'Approved') return;
-
-      appState.deposits[idx].status = 'Approved';
-      await persistDeposit(appState.deposits[idx]);
-
-      const targetPhone = appState.deposits[idx].phone;
-      if (appState.users[targetPhone]) {
-        appState.users[targetPhone].balance = (appState.users[targetPhone].balance || 0) + appState.deposits[idx].amount;
-        await persistUser(appState.users[targetPhone]);
-      }
-
-      renderAdminUtrList();
-      refreshUI();
-      showToast(`Approved ₹${appState.deposits[idx].amount} for ${appState.deposits[idx].userName}!`);
-    };
-
-    function renderAdminMessages() {
-      const box = document.getElementById('admin-messages-list');
-      if (appState.messages.length === 0) {
-        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">No user messages in inbox.</p>';
-        return;
-      }
-
-      box.innerHTML = appState.messages.slice().reverse().map(m => `
-        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
-          <div class="flex justify-between text-[10px] font-bold text-slate-500">
-            <span>${m.userName} (+91 ${m.phone})</span>
-            <span>${m.time}</span>
-          </div>
-          <p class="font-semibold text-slate-800">${m.text}</p>
-          <div class="flex gap-1.5 pt-1">
-            <input id="reply-input-${m.id}" type="text" value="${m.reply || ''}" placeholder="Write Admin reply..." class="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] bg-white outline-none" />
-            <button onclick="sendAdminReply('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-mayur-red text-white text-[10px] font-bold">Reply</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    window.sendAdminReply = async function (msgId) {
-      const idx = appState.messages.findIndex(m => m.id === msgId);
-      if (idx === -1) return;
-      const val = document.getElementById('reply-input-' + msgId).value.trim();
-      appState.messages[idx].reply = val;
-      await persistMessage(appState.messages[idx]);
-      showToast('Reply sent to user!');
-    };
-
-    window.updateAdminPin = async function () {
+    window.updateAdminPin = async function() {
       const newPin = document.getElementById('admin-new-pin').value.trim();
       if (newPin.length < 4) {
         showToast('New PIN must be at least 4 characters.');
         return;
       }
-      appState.settings.adminPin = newPin;
-      await persistSettings();
+      state.adminPin = newPin;
+      await saveSettingsToCloud();
       document.getElementById('admin-new-pin').value = '';
-      showToast('Secret Admin PIN updated to: ' + newPin);
+      showToast('Secret Admin PIN updated!');
     };
 
-    window.onload = function () {
-      syncLiveUpiDisplay();
-      initCloudSync();
+    function renderAdminLists() {
+      // 1. UTR Approvals
+      const utrBox = document.getElementById('admin-utr-list');
+      if (state.recharges.length === 0) {
+        utrBox.innerHTML = `<p class="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl text-center">No UTR deposit requests yet.</p>`;
+      } else {
+        utrBox.innerHTML = state.recharges.map((r, idx) => `
+          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-extrabold text-slate-800">${r.userName} (+91 ${r.userPhone})</p>
+                <p class="text-[11px] font-bold text-mayur-red">Amount: ₹${r.amount} • UTR: <span class="font-mono">${r.utr}</span></p>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : r.status === 'Rejected' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}">${r.status}</span>
+            </div>
+            ${r.status === 'Pending' ? `
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="processUtrAction(${idx}, 'Approved')" class="py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[11px]">Approve & Credit</button>
+                <button onclick="processUtrAction(${idx}, 'Rejected')" class="py-1.5 rounded-xl bg-rose-600 text-white font-bold text-[11px]">Reject</button>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      }
+
+      // 2. Customer Support Messages
+      const msgBox = document.getElementById('admin-messages-list');
+      if (state.messages.length === 0) {
+        msgBox.innerHTML = `<p class="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl text-center">No customer support messages yet.</p>`;
+      } else {
+        msgBox.innerHTML = state.messages.map((m, idx) => `
+          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="font-extrabold text-mayur-dark">${m.userName} (+91 ${m.userPhone})</span>
+              <span class="text-[10px] text-slate-400">${m.timeStr}</span>
+            </div>
+            <p class="bg-white p-2 rounded-xl border border-slate-100 font-semibold text-slate-700">${m.text}</p>
+            <div class="flex gap-1.5">
+              <input id="admin-reply-inp-${idx}" type="text" value="${m.adminReply || ''}" placeholder="Write reply to member..." class="flex-1 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs bg-white outline-none" />
+              <button onclick="sendAdminReply(${idx})" class="px-3 py-1.5 rounded-xl crimson-btn text-white font-bold text-[11px]">Reply</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    window.processUtrAction = async function(idx, decision) {
+      const req = state.recharges[idx];
+      if (!req || req.status !== 'Pending') return;
+      req.status = decision;
+      await saveRechargeToCloud(req);
+
+      if (decision === 'Approved' && state.users[req.userPhone]) {
+        state.users[req.userPhone].balance += req.amount;
+        await saveUserToCloud(state.users[req.userPhone]);
+      }
+      renderAdminLists();
+      refreshAllViews();
+      showToast(`UTR ${req.utr} marked as ${decision}!`);
     };
+
+    window.sendAdminReply = async function(idx) {
+      const msg = state.messages[idx];
+      if (!msg) return;
+      const replyVal = document.getElementById(`admin-reply-inp-${idx}`).value.trim();
+      msg.adminReply = replyVal;
+      await saveMessageToCloud(msg);
+      renderAdminLists();
+      showToast('Reply sent to member!');
+    };
+
+    // Clipboard Utility (iFrame-safe)
+    function copyToClipboard(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    window.copyReferralCode = function() {
+      const user = getCurrentUser();
+      const code = user ? user.refCode : 'MAYUR100';
+      copyToClipboard(code);
+      showToast(`Copied Invitation Code: ${code}`);
+    };
+
+    // Refresh All UI Bindings
+    function refreshAllViews() {
+      renderPlansList();
+      updateLiveUpiDisplay();
+      const user = getCurrentUser();
+      if (!user) return;
+
+      document.getElementById('top-mini-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('inc-wallet-bal').textContent = user.balance.toLocaleString('en-IN');
+      document.getElementById('prof-wallet-bal').textContent = user.balance.toLocaleString('en-IN');
+
+      document.getElementById('prof-user-name').textContent = user.name;
+      document.getElementById('prof-user-phone').textContent = '+91 ' + user.phone;
+      document.getElementById('prof-user-id').textContent = user.id;
+      document.getElementById('team-ref-code').textContent = user.refCode;
+      document.getElementById('prof-bank-status').textContent = user.bank ? `${user.bank.acc} (${user.bank.ifsc})` : 'Not Linked';
+
+      const activePlans = user.activePlans || [];
+      document.getElementById('inc-active-count').textContent = activePlans.length;
+      const dailyEst = activePlans.reduce((sum, p) => sum + (p.daysClaimed < p.days ? p.daily : 0), 0);
+      document.getElementById('inc-daily-est').textContent = dailyEst.toLocaleString('en-IN');
+      document.getElementById('inc-total-earned').textContent = (user.totalEarned || 0).toLocaleString('en-IN');
+
+      const activeContainer = document.getElementById('active-plans-container');
+      if (activePlans.length === 0) {
+        activeContainer.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 text-center border border-rose-100 space-y-2">
+            <i class="fa-solid fa-box-open text-2xl text-rose-300"></i>
+            <p class="text-xs font-bold text-slate-600">You have no active trading plans yet.</p>
+            <button onclick="switchMainTab('home')" class="px-4 py-2 rounded-xl crimson-btn text-white text-xs font-extrabold">Explore Plans</button>
+          </div>
+        `;
+      } else {
+        activeContainer.innerHTML = activePlans.map(p => `
+          <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-xs flex items-center justify-between">
+            <div>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase">Active • ${p.daysClaimed}/${p.days} Days</span>
+              <h5 class="text-sm font-black text-mayur-dark mt-1">${p.name}</h5>
+              <p class="text-[11px] text-slate-500">Daily Yield: ₹${p.daily} • Purchased: ${p.purchasedAt}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs font-black text-mayur-red">₹${p.price}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    window.addEventListener('load', () => {
+      renderPlansList();
+      initCloudSync();
+    });
   </script>
 </body>
 </html>
