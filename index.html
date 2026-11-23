@@ -859,7 +859,7 @@
           </div>
           <div id="cloud-sync-badge" class="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-[10px] font-extrabold text-emerald-700 flex items-center justify-between">
             <span><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Global Live Cloud Sync: ACTIVE</span>
-            <span id="cloud-sync-time">Synced</span>
+            <button type="button" onclick="pullFromGlobalCloud(true)" id="cloud-sync-time" class="underline">Sync Now</button>
           </div>
           <div class="pt-2 border-t border-slate-100">
             <label class="block text-[10px] font-extrabold text-slate-600 uppercase mb-1">Change Owner PIN</label>
@@ -921,7 +921,7 @@
     const FALLBACK_IMG = 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=600&q=80';
     const STORAGE_KEY = 'MAYUR_TRADING_PORTAL_V5';
     const SESSION_KEY = 'MAYUR_TRADING_ACTIVE_SESSION_PHONE';
-    const CLOUD_SYNC_URL = 'https://kvdb.io/A9xK7mP2qL8vR4nT6wY1zB/mayur_trading_live_v1';
+    const DEFAULT_CLOUD_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/019ab12e-7b40-7c11-9d2a-8f4e21a09b31';
     let isCloudSyncing = false;
 
     // =====================================
@@ -933,6 +933,7 @@
       upiId: 'mayurtrading@upi',
       customQrDataUrl: '',
       pendingQrUpload: '',
+      cloudBlobUrl: DEFAULT_CLOUD_BLOB_URL,
       users: {},
       recharges: [],
       withdrawals: [],
@@ -950,6 +951,7 @@
           const parsed = JSON.parse(raw);
           state = { ...state, ...parsed };
         }
+        if (!state.cloudBlobUrl) state.cloudBlobUrl = DEFAULT_CLOUD_BLOB_URL;
         const savedPhone = localStorage.getItem(SESSION_KEY);
         if (savedPhone && state.users[savedPhone]) {
           state.currentUserPhone = savedPhone;
@@ -959,98 +961,224 @@
       }
     }
 
-    async function pullFromGlobalCloud() {
+    async function ensureCloudBlobEndpoint() {
+      if (state.cloudBlobUrl) return state.cloudBlobUrl;
+      try {
+        const res = await fetch('https://jsonblob.com/api/jsonBlob', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            upiId: state.upiId,
+            customQrDataUrl: state.customQrDataUrl || '',
+            adminPin: state.adminPin,
+            recharges: state.recharges,
+            withdrawals: state.withdrawals,
+            messages: state.messages,
+            updatedAt: Date.now()
+          })
+        });
+        const loc = res.headers.get('Location') || res.headers.get('location');
+        if (loc) {
+          state.cloudBlobUrl = loc.startsWith('http') ? loc : `https://jsonblob.com${loc}`;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+      } catch (e) {
+        console.warn('Blob init error:', e);
+      }
+      return state.cloudBlobUrl;
+    }
+
+    async function pushFullStateToCloud() {
+      try {
+        const url = await ensureCloudBlobEndpoint();
+        if (!url) return false;
+
+        // First fetch latest cloud state so we merge & never overwrite customer messages/UTRs
+        let remote = {};
+        try {
+          const getRes = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
+          if (getRes.ok) remote = await getRes.json();
+        } catch (err) {}
+
+        const mergedRecharges = mergeById(remote.recharges || [], state.recharges || []);
+        const mergedWithdrawals = mergeById(remote.withdrawals || [], state.withdrawals || []);
+        const mergedMessages = mergeMessagesById(remote.messages || [], state.messages || []);
+
+        state.recharges = mergedRecharges;
+        state.withdrawals = mergedWithdrawals;
+        state.messages = mergedMessages;
+
+        const payload = {
+          upiId: state.upiId,
+          customQrDataUrl: state.customQrDataUrl || '',
+          adminPin: state.adminPin,
+          recharges: mergedRecharges,
+          withdrawals: mergedWithdrawals,
+          messages: mergedMessages,
+          updatedAt: Date.now()
+        };
+
+        let putRes = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        // If default blob ID expired/404, auto-create a fresh permanent blob
+        if (!putRes.ok) {
+          state.cloudBlobUrl = '';
+          const freshUrl = await ensureCloudBlobEndpoint();
+          if (freshUrl) {
+            putRes = await fetch(freshUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+          }
+        }
+
+        const syncTimeEl = document.getElementById('cloud-sync-time');
+        if (syncTimeEl) {
+          syncTimeEl.textContent = putRes.ok
+            ? 'Synced • ' + new Date().toLocaleTimeString('en-IN')
+            : 'Retrying...';
+        }
+        return putRes.ok;
+      } catch (e) {
+        console.warn('Cloud push error:', e);
+        return false;
+      }
+    }
+
+    function mergeById(remoteArr, localArr) {
+      const map = new Map();
+      remoteArr.forEach(item => { if (item && item.id) map.set(item.id, item); });
+      localArr.forEach(item => {
+        if (!item || !item.id) return;
+        const existing = map.get(item.id);
+        if (!existing) {
+          map.set(item.id, item);
+        } else {
+          // Prefer non-pending status (Approved / Paid / Rejected)
+          if (item.status !== 'Pending') map.set(item.id, item);
+        }
+      });
+      return Array.from(map.values());
+    }
+
+    function mergeMessagesById(remoteArr, localArr) {
+      const map = new Map();
+      remoteArr.forEach(m => { if (m && m.id) map.set(m.id, m); });
+      localArr.forEach(m => {
+        if (!m || !m.id) return;
+        const existing = map.get(m.id);
+        if (!existing) {
+          map.set(m.id, m);
+        } else if (m.reply && !existing.reply) {
+          map.set(m.id, m);
+        }
+      });
+      return Array.from(map.values());
+    }
+
+    async function pullFromGlobalCloud(manualTrigger = false) {
       if (isCloudSyncing) return;
       isCloudSyncing = true;
       try {
-        const res = await fetch(CLOUD_SYNC_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        const url = state.cloudBlobUrl || DEFAULT_CLOUD_BLOB_URL;
+        const res = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
         if (res.ok) {
           const remote = await res.json();
-          if (remote && typeof remote === 'object') {
-            if (remote.upiId) state.upiId = remote.upiId;
-            if (typeof remote.customQrDataUrl === 'string') state.customQrDataUrl = remote.customQrDataUrl;
-            if (remote.adminPin) state.adminPin = remote.adminPin;
+          let hasChanges = false;
 
-            // Merge users so remote admin approvals update local balance while preserving local edits
-            if (remote.users && typeof remote.users === 'object') {
-              Object.keys(remote.users).forEach(phone => {
-                if (!state.users[phone]) {
-                  state.users[phone] = remote.users[phone];
-                } else {
-                  const rUser = remote.users[phone];
-                  const lUser = state.users[phone];
-                  if ((rUser.updatedAt || 0) > (lUser.updatedAt || 0)) {
-                    state.users[phone] = { ...lUser, ...rUser };
-                  }
-                }
-              });
-            }
-
-            // Merge recharges, withdrawals, and messages by ID
-            const mergeById = (localArr, remoteArr) => {
-              const map = new Map();
-              (localArr || []).forEach(item => map.set(item.id, item));
-              (remoteArr || []).forEach(item => {
-                const existing = map.get(item.id);
-                if (!existing || (item.status && item.status !== 'Pending') || item.reply) {
-                  map.set(item.id, item);
-                }
-              });
-              return Array.from(map.values());
-            };
-
-            if (Array.isArray(remote.recharges)) state.recharges = mergeById(state.recharges, remote.recharges);
-            if (Array.isArray(remote.withdrawals)) state.withdrawals = mergeById(state.withdrawals, remote.withdrawals);
-            if (Array.isArray(remote.messages)) state.messages = mergeById(state.messages, remote.messages);
-
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-            // Live update open UPI/QR modal if member has it open
-            const upiTextEl = document.getElementById('live-upi-text');
-            if (upiTextEl) upiTextEl.textContent = state.upiId;
-            const rechModal = document.getElementById('modal-recharge');
-            if (rechModal && !rechModal.classList.contains('hidden')) {
-              updateDynamicQrForAmount();
-              renderModalRechargeHistory();
-            }
-
-            if (getCurrentUser()) {
-              refreshAllViews();
-            }
-            const syncTimeEl = document.getElementById('cloud-sync-time');
-            if (syncTimeEl) syncTimeEl.textContent = 'Live • ' + new Date().toLocaleTimeString('en-IN');
+          if (remote.upiId && state.upiId !== remote.upiId) {
+            state.upiId = remote.upiId;
+            hasChanges = true;
           }
+          if (typeof remote.customQrDataUrl === 'string' && state.customQrDataUrl !== remote.customQrDataUrl) {
+            state.customQrDataUrl = remote.customQrDataUrl;
+            hasChanges = true;
+          }
+          if (remote.adminPin && state.adminPin !== remote.adminPin) {
+            state.adminPin = remote.adminPin;
+            hasChanges = true;
+          }
+
+          if (Array.isArray(remote.recharges)) {
+            const mergedR = mergeById(remote.recharges, state.recharges);
+            mergedR.forEach(r => {
+              const localOld = state.recharges.find(lr => lr.id === r.id);
+              if (r.status === 'Approved' && (!localOld || localOld.status !== 'Approved')) {
+                if (state.users[r.userPhone]) {
+                  state.users[r.userPhone].balance = (state.users[r.userPhone].balance || 0) + r.amount;
+                }
+              }
+            });
+            if (JSON.stringify(mergedR) !== JSON.stringify(state.recharges)) {
+              state.recharges = mergedR;
+              hasChanges = true;
+            }
+          }
+
+          if (Array.isArray(remote.withdrawals)) {
+            const mergedW = mergeById(remote.withdrawals, state.withdrawals);
+            mergedW.forEach(w => {
+              const localOld = state.withdrawals.find(lw => lw.id === w.id);
+              if (w.status === 'Rejected' && (!localOld || localOld.status !== 'Rejected')) {
+                if (state.users[w.userPhone]) {
+                  state.users[w.userPhone].balance = (state.users[w.userPhone].balance || 0) + w.amount;
+                }
+              }
+            });
+            if (JSON.stringify(mergedW) !== JSON.stringify(state.withdrawals)) {
+              state.withdrawals = mergedW;
+              hasChanges = true;
+            }
+          }
+
+          if (Array.isArray(remote.messages)) {
+            const mergedM = mergeMessagesById(remote.messages, state.messages);
+            if (JSON.stringify(mergedM) !== JSON.stringify(state.messages)) {
+              state.messages = mergedM;
+              hasChanges = true;
+            }
+          }
+
+          if (hasChanges) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          }
+
+          // Always refresh live UPI & QR if open
+          const upiTextEl = document.getElementById('live-upi-text');
+          if (upiTextEl) upiTextEl.textContent = state.upiId;
+          const rechModal = document.getElementById('modal-recharge');
+          if (rechModal && !rechModal.classList.contains('hidden')) {
+            updateDynamicQrForAmount();
+            renderModalRechargeHistory();
+          }
+
+          // Refresh open chat or admin panel live
+          const chatModal = document.getElementById('modal-chat');
+          if (chatModal && !chatModal.classList.contains('hidden')) {
+            renderMemberChat();
+          }
+          const admPanel = document.getElementById('modal-admin-panel');
+          if (admPanel && !admPanel.classList.contains('hidden')) {
+            renderAdminLists();
+          }
+
+          if (getCurrentUser()) {
+            refreshAllViews();
+          }
+
+          const syncTimeEl = document.getElementById('cloud-sync-time');
+          if (syncTimeEl) syncTimeEl.textContent = 'Live • ' + new Date().toLocaleTimeString('en-IN');
+          if (manualTrigger) showToast('Synced latest UPI, QR & messages!');
         }
       } catch (e) {
         console.warn('Cloud pull skipped:', e);
       } finally {
         isCloudSyncing = false;
-      }
-    }
-
-    async function pushToGlobalCloud() {
-      try {
-        const user = getCurrentUser();
-        if (user) user.updatedAt = Date.now();
-        const payload = {
-          adminPin: state.adminPin,
-          upiId: state.upiId,
-          customQrDataUrl: state.customQrDataUrl || '',
-          users: state.users,
-          recharges: state.recharges,
-          withdrawals: state.withdrawals,
-          messages: state.messages,
-          lastSyncAt: Date.now()
-        };
-        await fetch(CLOUD_SYNC_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const syncTimeEl = document.getElementById('cloud-sync-time');
-        if (syncTimeEl) syncTimeEl.textContent = 'Updated • ' + new Date().toLocaleTimeString('en-IN');
-      } catch (e) {
-        console.warn('Cloud push warning:', e);
       }
     }
 
@@ -1064,7 +1192,6 @@
         } else {
           localStorage.removeItem(SESSION_KEY);
         }
-        pushToGlobalCloud();
       } catch (e) {
         console.warn('Storage save error:', e);
       }
@@ -1486,6 +1613,7 @@
       updateDynamicQrForAmount();
       renderModalRechargeHistory();
       openModal('modal-recharge');
+      pullFromGlobalCloud();
     }
 
     function openDirectUpiApp(e) {
@@ -1548,17 +1676,19 @@
         return;
       }
 
-      state.recharges.unshift({
-        id: 'RCH-' + Date.now(),
+      const newRech = {
+        id: 'RCH-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         userPhone: user.phone,
         userName: user.name,
         amount,
         utr,
         status: 'Pending',
         timeStr: new Date().toLocaleString('en-IN')
-      });
+      };
+      state.recharges.unshift(newRech);
 
       saveState();
+      pushFullStateToCloud();
       document.getElementById('rech-utr').value = '';
       renderModalRechargeHistory();
       refreshAllViews();
@@ -1685,8 +1815,8 @@
       }
 
       user.balance -= amt;
-      state.withdrawals.unshift({
-        id: 'WD-' + Date.now(),
+      const newWd = {
+        id: 'WD-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         userPhone: user.phone,
         userName: user.name,
         amount: amt,
@@ -1695,9 +1825,11 @@
         bankIfsc: user.bank.ifsc,
         status: 'Pending',
         timeStr: new Date().toLocaleString('en-IN')
-      });
+      };
+      state.withdrawals.unshift(newWd);
 
       saveState();
+      pushFullStateToCloud();
       document.getElementById('wd-amount').value = '';
       document.getElementById('wd-avail-bal').textContent = user.balance.toLocaleString('en-IN');
       renderModalWithdrawHistory();
@@ -1851,6 +1983,7 @@
     function openChatModal() {
       renderMemberChat();
       openModal('modal-chat');
+      pullFromGlobalCloud();
     }
 
     function renderMemberChat() {
@@ -1887,18 +2020,42 @@
       const text = input.value.trim();
       if (!text) return;
 
-      state.messages.push({
-        id: 'MSG-' + Date.now(),
+      const newMsg = {
+        id: 'MSG-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         userPhone: user.phone,
         userName: user.name,
         text,
         reply: '',
         timeStr: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-      });
+      };
+      state.messages.push(newMsg);
       saveState();
+      pushFullStateToCloud();
       input.value = '';
       renderMemberChat();
       showToast('Message sent to Admin Inbox!');
+    }
+
+    // =====================================
+    // ADMIN PANEL & APPROVALS
+    // =====================================
+    function openAdminGate() {
+      document.getElementById('admin-pin-input').value = '';
+      openModal('modal-admin-gate');
+    }
+
+    function verifyAdminPin() {
+      const entered = document.getElementById('admin-pin-input').value.trim();
+      if (entered !== state.adminPin) {
+        showToast('Invalid Admin PIN!');
+        return;
+      }
+      closeModal('modal-admin-gate');
+      document.getElementById('adm-upi-input').value = state.upiId;
+      switchAdminTab('upi');
+      renderAdminLists();
+      openModal('modal-admin-panel');
+      pullFromGlobalCloud();
     }
 
     // =====================================
@@ -1944,12 +2101,12 @@
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const maxDim = 320;
+          const maxDim = 160;
           const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          state.pendingQrUpload = canvas.toDataURL('image/jpeg', 0.8);
+          state.pendingQrUpload = canvas.toDataURL('image/jpeg', 0.55);
           showToast('QR photo ready! Click Save & Update Live UPI / QR.');
         };
         img.src = ev.target.result;
@@ -1957,7 +2114,7 @@
       reader.readAsDataURL(file);
     }
 
-    function saveAdminUpiSettings() {
+    async function saveAdminUpiSettings() {
       const newUpi = document.getElementById('adm-upi-input').value.trim();
       if (newUpi) state.upiId = newUpi;
       if (state.pendingQrUpload) {
@@ -1965,17 +2122,23 @@
         state.pendingQrUpload = '';
       }
       saveState();
-      showToast('Live UPI ID & QR updated for all members!');
+      const ok = await pushFullStateToCloud();
+      if (ok) {
+        showToast('Live UPI ID & QR updated for ALL members globally!');
+      } else {
+        showToast('Saved locally; retrying global cloud broadcast...');
+      }
     }
 
-    function clearAdminCustomQr() {
+    async function clearAdminCustomQr() {
       state.customQrDataUrl = '';
       state.pendingQrUpload = '';
       saveState();
-      showToast('Reset to Auto-Generated UPI QR!');
+      await pushFullStateToCloud();
+      showToast('Reset to Auto-Generated UPI QR for all members!');
     }
 
-    function updateAdminPin() {
+    async function updateAdminPin() {
       const newPin = document.getElementById('adm-new-pin').value.trim();
       if (newPin.length < 4) {
         showToast('PIN must be at least 4 characters.');
@@ -1983,6 +2146,7 @@
       }
       state.adminPin = newPin;
       saveState();
+      await pushFullStateToCloud();
       document.getElementById('adm-new-pin').value = '';
       showToast('Owner Admin PIN updated!');
     }
@@ -2000,6 +2164,7 @@
         }
       }
       saveState();
+      pushFullStateToCloud();
       renderAdminLists();
       refreshAllViews();
       showToast(`UTR ${action}: ₹${item.amount}`);
@@ -2018,6 +2183,7 @@
         }
       }
       saveState();
+      pushFullStateToCloud();
       renderAdminLists();
       refreshAllViews();
       showToast(`Withdrawal marked ${action}`);
@@ -2031,6 +2197,7 @@
       if (!replyText) return;
       msg.reply = replyText;
       saveState();
+      pushFullStateToCloud();
       renderAdminLists();
       showToast('Reply sent to member!');
     }
@@ -2240,8 +2407,8 @@
       if (state.currentUserPhone && state.users[state.currentUserPhone]) {
         enterAppShell();
       }
-      // Keep syncing every 6 seconds in background
-      setInterval(pullFromGlobalCloud, 6000);
+      // Keep syncing every 4 seconds in background
+      setInterval(pullFromGlobalCloud, 4000);
     });
   </script>
 </body>
