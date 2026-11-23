@@ -857,6 +857,10 @@
             <button onclick="saveAdminUpiSettings()" class="flex-1 py-2.5 rounded-xl gold-btn text-xs font-extrabold">Save & Update Live UPI / QR</button>
             <button onclick="clearAdminCustomQr()" class="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-[10px] font-extrabold">Reset QR</button>
           </div>
+          <div id="cloud-sync-badge" class="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-[10px] font-extrabold text-emerald-700 flex items-center justify-between">
+            <span><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Global Live Cloud Sync: ACTIVE</span>
+            <span id="cloud-sync-time">Synced</span>
+          </div>
           <div class="pt-2 border-t border-slate-100">
             <label class="block text-[10px] font-extrabold text-slate-600 uppercase mb-1">Change Owner PIN</label>
             <div class="flex gap-2">
@@ -917,6 +921,8 @@
     const FALLBACK_IMG = 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=600&q=80';
     const STORAGE_KEY = 'MAYUR_TRADING_PORTAL_V5';
     const SESSION_KEY = 'MAYUR_TRADING_ACTIVE_SESSION_PHONE';
+    const CLOUD_SYNC_URL = 'https://kvdb.io/A9xK7mP2qL8vR4nT6wY1zB/mayur_trading_live_v1';
+    let isCloudSyncing = false;
 
     // =====================================
     // APPLICATION STATE & PERSISTENCE
@@ -953,14 +959,112 @@
       }
     }
 
+    async function pullFromGlobalCloud() {
+      if (isCloudSyncing) return;
+      isCloudSyncing = true;
+      try {
+        const res = await fetch(CLOUD_SYNC_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          const remote = await res.json();
+          if (remote && typeof remote === 'object') {
+            if (remote.upiId) state.upiId = remote.upiId;
+            if (typeof remote.customQrDataUrl === 'string') state.customQrDataUrl = remote.customQrDataUrl;
+            if (remote.adminPin) state.adminPin = remote.adminPin;
+
+            // Merge users so remote admin approvals update local balance while preserving local edits
+            if (remote.users && typeof remote.users === 'object') {
+              Object.keys(remote.users).forEach(phone => {
+                if (!state.users[phone]) {
+                  state.users[phone] = remote.users[phone];
+                } else {
+                  const rUser = remote.users[phone];
+                  const lUser = state.users[phone];
+                  if ((rUser.updatedAt || 0) > (lUser.updatedAt || 0)) {
+                    state.users[phone] = { ...lUser, ...rUser };
+                  }
+                }
+              });
+            }
+
+            // Merge recharges, withdrawals, and messages by ID
+            const mergeById = (localArr, remoteArr) => {
+              const map = new Map();
+              (localArr || []).forEach(item => map.set(item.id, item));
+              (remoteArr || []).forEach(item => {
+                const existing = map.get(item.id);
+                if (!existing || (item.status && item.status !== 'Pending') || item.reply) {
+                  map.set(item.id, item);
+                }
+              });
+              return Array.from(map.values());
+            };
+
+            if (Array.isArray(remote.recharges)) state.recharges = mergeById(state.recharges, remote.recharges);
+            if (Array.isArray(remote.withdrawals)) state.withdrawals = mergeById(state.withdrawals, remote.withdrawals);
+            if (Array.isArray(remote.messages)) state.messages = mergeById(state.messages, remote.messages);
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+            // Live update open UPI/QR modal if member has it open
+            const upiTextEl = document.getElementById('live-upi-text');
+            if (upiTextEl) upiTextEl.textContent = state.upiId;
+            const rechModal = document.getElementById('modal-recharge');
+            if (rechModal && !rechModal.classList.contains('hidden')) {
+              updateDynamicQrForAmount();
+              renderModalRechargeHistory();
+            }
+
+            if (getCurrentUser()) {
+              refreshAllViews();
+            }
+            const syncTimeEl = document.getElementById('cloud-sync-time');
+            if (syncTimeEl) syncTimeEl.textContent = 'Live • ' + new Date().toLocaleTimeString('en-IN');
+          }
+        }
+      } catch (e) {
+        console.warn('Cloud pull skipped:', e);
+      } finally {
+        isCloudSyncing = false;
+      }
+    }
+
+    async function pushToGlobalCloud() {
+      try {
+        const user = getCurrentUser();
+        if (user) user.updatedAt = Date.now();
+        const payload = {
+          adminPin: state.adminPin,
+          upiId: state.upiId,
+          customQrDataUrl: state.customQrDataUrl || '',
+          users: state.users,
+          recharges: state.recharges,
+          withdrawals: state.withdrawals,
+          messages: state.messages,
+          lastSyncAt: Date.now()
+        };
+        await fetch(CLOUD_SYNC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const syncTimeEl = document.getElementById('cloud-sync-time');
+        if (syncTimeEl) syncTimeEl.textContent = 'Updated • ' + new Date().toLocaleTimeString('en-IN');
+      } catch (e) {
+        console.warn('Cloud push warning:', e);
+      }
+    }
+
     function saveState() {
       try {
+        const user = getCurrentUser();
+        if (user) user.updatedAt = Date.now();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         if (state.currentUserPhone) {
           localStorage.setItem(SESSION_KEY, state.currentUserPhone);
         } else {
           localStorage.removeItem(SESSION_KEY);
         }
+        pushToGlobalCloud();
       } catch (e) {
         console.warn('Storage save error:', e);
       }
@@ -1892,6 +1996,7 @@
         const user = state.users[item.userPhone];
         if (user) {
           user.balance = (user.balance || 0) + item.amount;
+          user.updatedAt = Date.now();
         }
       }
       saveState();
@@ -1909,6 +2014,7 @@
         const user = state.users[item.userPhone];
         if (user) {
           user.balance = (user.balance || 0) + item.amount;
+          user.updatedAt = Date.now();
         }
       }
       saveState();
@@ -2110,7 +2216,7 @@
     // =====================================
     // INITIALIZE PORTAL ON LOAD
     // =====================================
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       loadState();
       const urlParams = new URLSearchParams(window.location.search);
       const refParam = urlParams.get('ref');
@@ -2128,6 +2234,14 @@
       if (state.currentUserPhone && state.users[state.currentUserPhone]) {
         enterAppShell();
       }
+
+      // Immediately sync latest UPI, QR, approvals & requests across all users
+      await pullFromGlobalCloud();
+      if (state.currentUserPhone && state.users[state.currentUserPhone]) {
+        enterAppShell();
+      }
+      // Keep syncing every 6 seconds in background
+      setInterval(pullFromGlobalCloud, 6000);
     });
   </script>
 </body>
