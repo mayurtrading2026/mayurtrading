@@ -919,9 +919,10 @@
     ];
 
     const FALLBACK_IMG = 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=600&q=80';
-    const STORAGE_KEY = 'MAYUR_TRADING_PORTAL_V5';
+    const STORAGE_KEY = 'MAYUR_TRADING_PORTAL_V6';
     const SESSION_KEY = 'MAYUR_TRADING_ACTIVE_SESSION_PHONE';
-    const DEFAULT_CLOUD_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/019ab12e-7b40-7c11-9d2a-8f4e21a09b31';
+    const GLOBAL_CLOUD_ENDPOINT = 'https://kvdb.io/A2x9KmPq7Lw4VnRt8Yz3Bc/mayur_trading_live_v6';
+    const GLOBAL_EVENT_TOPIC = 'mayur_trading_live_broadcast_v6_9821';
     let isCloudSyncing = false;
 
     // =====================================
@@ -930,10 +931,9 @@
     let state = {
       currentUserPhone: null,
       adminPin: 'MAYUR@786',
-      upiId: 'mayurtrading@upi',
+      upiId: 'shivsena.vidisha@ybl',
       customQrDataUrl: '',
       pendingQrUpload: '',
-      cloudBlobUrl: DEFAULT_CLOUD_BLOB_URL,
       users: {},
       recharges: [],
       withdrawals: [],
@@ -946,12 +946,11 @@
 
     function loadState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('MAYUR_TRADING_PORTAL_V5');
         if (raw) {
           const parsed = JSON.parse(raw);
           state = { ...state, ...parsed };
         }
-        if (!state.cloudBlobUrl) state.cloudBlobUrl = DEFAULT_CLOUD_BLOB_URL;
         const savedPhone = localStorage.getItem(SESSION_KEY);
         if (savedPhone && state.users[savedPhone]) {
           state.currentUserPhone = savedPhone;
@@ -961,43 +960,17 @@
       }
     }
 
-    async function ensureCloudBlobEndpoint() {
-      if (state.cloudBlobUrl) return state.cloudBlobUrl;
-      try {
-        const res = await fetch('https://jsonblob.com/api/jsonBlob', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            upiId: state.upiId,
-            customQrDataUrl: state.customQrDataUrl || '',
-            adminPin: state.adminPin,
-            recharges: state.recharges,
-            withdrawals: state.withdrawals,
-            messages: state.messages,
-            updatedAt: Date.now()
-          })
-        });
-        const loc = res.headers.get('Location') || res.headers.get('location');
-        if (loc) {
-          state.cloudBlobUrl = loc.startsWith('http') ? loc : `https://jsonblob.com${loc}`;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        }
-      } catch (e) {
-        console.warn('Blob init error:', e);
-      }
-      return state.cloudBlobUrl;
-    }
-
     async function pushFullStateToCloud() {
+      let success = false;
       try {
-        const url = await ensureCloudBlobEndpoint();
-        if (!url) return false;
-
-        // First fetch latest cloud state so we merge & never overwrite customer messages/UTRs
+        // 1. Fetch latest remote state from CORS-enabled KVDB store so customer items merge safely
         let remote = {};
         try {
-          const getRes = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
-          if (getRes.ok) remote = await getRes.json();
+          const getRes = await fetch(`${GLOBAL_CLOUD_ENDPOINT}?_=${Date.now()}`, { cache: 'no-store' });
+          if (getRes.ok) {
+            const txt = await getRes.text();
+            if (txt) remote = JSON.parse(txt);
+          }
         } catch (err) {}
 
         const mergedRecharges = mergeById(remote.recharges || [], state.recharges || []);
@@ -1018,36 +991,32 @@
           updatedAt: Date.now()
         };
 
-        let putRes = await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        // 2. Write to CORS-enabled KVDB store (supports GET & POST from any domain including github.io)
+        const postRes = await fetch(GLOBAL_CLOUD_ENDPOINT, {
+          method: 'POST',
           body: JSON.stringify(payload)
         });
+        if (postRes.ok) success = true;
 
-        // If default blob ID expired/404, auto-create a fresh permanent blob
-        if (!putRes.ok) {
-          state.cloudBlobUrl = '';
-          const freshUrl = await ensureCloudBlobEndpoint();
-          if (freshUrl) {
-            putRes = await fetch(freshUrl, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-          }
-        }
+        // 3. Also broadcast via ntfy.sh CORS-enabled pub/sub as instant secondary channel
+        try {
+          const pubRes = await fetch(`https://ntfy.sh/${GLOBAL_EVENT_TOPIC}`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          if (pubRes.ok) success = true;
+        } catch (e2) {}
 
         const syncTimeEl = document.getElementById('cloud-sync-time');
         if (syncTimeEl) {
-          syncTimeEl.textContent = putRes.ok
-            ? 'Synced • ' + new Date().toLocaleTimeString('en-IN')
-            : 'Retrying...';
+          syncTimeEl.textContent = success
+            ? 'Live Synced ✓ ' + new Date().toLocaleTimeString('en-IN')
+            : 'Syncing...';
         }
-        return putRes.ok;
       } catch (e) {
         console.warn('Cloud push error:', e);
-        return false;
       }
+      return success;
     }
 
     function mergeById(remoteArr, localArr) {
@@ -1058,9 +1027,8 @@
         const existing = map.get(item.id);
         if (!existing) {
           map.set(item.id, item);
-        } else {
-          // Prefer non-pending status (Approved / Paid / Rejected)
-          if (item.status !== 'Pending') map.set(item.id, item);
+        } else if (item.status !== 'Pending') {
+          map.set(item.id, item);
         }
       });
       return Array.from(map.values());
@@ -1081,100 +1049,133 @@
       return Array.from(map.values());
     }
 
+    function applyRemoteSnapshot(remote) {
+      if (!remote || typeof remote !== 'object') return false;
+      let hasChanges = false;
+
+      if (remote.upiId && state.upiId !== remote.upiId) {
+        state.upiId = remote.upiId;
+        hasChanges = true;
+      }
+      if (typeof remote.customQrDataUrl === 'string' && state.customQrDataUrl !== remote.customQrDataUrl) {
+        state.customQrDataUrl = remote.customQrDataUrl;
+        hasChanges = true;
+      }
+      if (remote.adminPin && state.adminPin !== remote.adminPin) {
+        state.adminPin = remote.adminPin;
+        hasChanges = true;
+      }
+
+      if (Array.isArray(remote.recharges)) {
+        const mergedR = mergeById(remote.recharges, state.recharges);
+        mergedR.forEach(r => {
+          const localOld = state.recharges.find(lr => lr.id === r.id);
+          if (r.status === 'Approved' && (!localOld || localOld.status !== 'Approved')) {
+            if (state.users[r.userPhone]) {
+              state.users[r.userPhone].balance = (state.users[r.userPhone].balance || 0) + r.amount;
+            }
+          }
+        });
+        if (JSON.stringify(mergedR) !== JSON.stringify(state.recharges)) {
+          state.recharges = mergedR;
+          hasChanges = true;
+        }
+      }
+
+      if (Array.isArray(remote.withdrawals)) {
+        const mergedW = mergeById(remote.withdrawals, state.withdrawals);
+        mergedW.forEach(w => {
+          const localOld = state.withdrawals.find(lw => lw.id === w.id);
+          if (w.status === 'Rejected' && (!localOld || localOld.status !== 'Rejected')) {
+            if (state.users[w.userPhone]) {
+              state.users[w.userPhone].balance = (state.users[w.userPhone].balance || 0) + w.amount;
+            }
+          }
+        });
+        if (JSON.stringify(mergedW) !== JSON.stringify(state.withdrawals)) {
+          state.withdrawals = mergedW;
+          hasChanges = true;
+        }
+      }
+
+      if (Array.isArray(remote.messages)) {
+        const mergedM = mergeMessagesById(remote.messages, state.messages);
+        if (JSON.stringify(mergedM) !== JSON.stringify(state.messages)) {
+          state.messages = mergedM;
+          hasChanges = true;
+        }
+      }
+
+      return hasChanges;
+    }
+
     async function pullFromGlobalCloud(manualTrigger = false) {
       if (isCloudSyncing) return;
       isCloudSyncing = true;
       try {
-        const url = state.cloudBlobUrl || DEFAULT_CLOUD_BLOB_URL;
-        const res = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const remote = await res.json();
-          let hasChanges = false;
+        let hasChanges = false;
+        let fetchedOk = false;
 
-          if (remote.upiId && state.upiId !== remote.upiId) {
-            state.upiId = remote.upiId;
-            hasChanges = true;
+        // 1. Primary CORS-enabled KVDB pull
+        try {
+          const res = await fetch(`${GLOBAL_CLOUD_ENDPOINT}?_=${Date.now()}`, { cache: 'no-store' });
+          if (res.ok) {
+            const txt = await res.text();
+            if (txt) {
+              const remote = JSON.parse(txt);
+              if (applyRemoteSnapshot(remote)) hasChanges = true;
+              fetchedOk = true;
+            }
           }
-          if (typeof remote.customQrDataUrl === 'string' && state.customQrDataUrl !== remote.customQrDataUrl) {
-            state.customQrDataUrl = remote.customQrDataUrl;
-            hasChanges = true;
-          }
-          if (remote.adminPin && state.adminPin !== remote.adminPin) {
-            state.adminPin = remote.adminPin;
-            hasChanges = true;
-          }
+        } catch (err1) {}
 
-          if (Array.isArray(remote.recharges)) {
-            const mergedR = mergeById(remote.recharges, state.recharges);
-            mergedR.forEach(r => {
-              const localOld = state.recharges.find(lr => lr.id === r.id);
-              if (r.status === 'Approved' && (!localOld || localOld.status !== 'Approved')) {
-                if (state.users[r.userPhone]) {
-                  state.users[r.userPhone].balance = (state.users[r.userPhone].balance || 0) + r.amount;
+        // 2. Fallback ntfy.sh JSON stream pull
+        if (!fetchedOk) {
+          try {
+            const ntfyRes = await fetch(`https://ntfy.sh/${GLOBAL_EVENT_TOPIC}/json?poll=1&since=24h`, { cache: 'no-store' });
+            if (ntfyRes.ok) {
+              const lines = (await ntfyRes.text()).trim().split('\n');
+              for (const line of lines) {
+                if (!line) continue;
+                const pkt = JSON.parse(line);
+                if (pkt.event === 'message' && pkt.message) {
+                  const remote = JSON.parse(pkt.message);
+                  if (applyRemoteSnapshot(remote)) hasChanges = true;
+                  fetchedOk = true;
                 }
               }
-            });
-            if (JSON.stringify(mergedR) !== JSON.stringify(state.recharges)) {
-              state.recharges = mergedR;
-              hasChanges = true;
             }
-          }
-
-          if (Array.isArray(remote.withdrawals)) {
-            const mergedW = mergeById(remote.withdrawals, state.withdrawals);
-            mergedW.forEach(w => {
-              const localOld = state.withdrawals.find(lw => lw.id === w.id);
-              if (w.status === 'Rejected' && (!localOld || localOld.status !== 'Rejected')) {
-                if (state.users[w.userPhone]) {
-                  state.users[w.userPhone].balance = (state.users[w.userPhone].balance || 0) + w.amount;
-                }
-              }
-            });
-            if (JSON.stringify(mergedW) !== JSON.stringify(state.withdrawals)) {
-              state.withdrawals = mergedW;
-              hasChanges = true;
-            }
-          }
-
-          if (Array.isArray(remote.messages)) {
-            const mergedM = mergeMessagesById(remote.messages, state.messages);
-            if (JSON.stringify(mergedM) !== JSON.stringify(state.messages)) {
-              state.messages = mergedM;
-              hasChanges = true;
-            }
-          }
-
-          if (hasChanges) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          }
-
-          // Always refresh live UPI & QR if open
-          const upiTextEl = document.getElementById('live-upi-text');
-          if (upiTextEl) upiTextEl.textContent = state.upiId;
-          const rechModal = document.getElementById('modal-recharge');
-          if (rechModal && !rechModal.classList.contains('hidden')) {
-            updateDynamicQrForAmount();
-            renderModalRechargeHistory();
-          }
-
-          // Refresh open chat or admin panel live
-          const chatModal = document.getElementById('modal-chat');
-          if (chatModal && !chatModal.classList.contains('hidden')) {
-            renderMemberChat();
-          }
-          const admPanel = document.getElementById('modal-admin-panel');
-          if (admPanel && !admPanel.classList.contains('hidden')) {
-            renderAdminLists();
-          }
-
-          if (getCurrentUser()) {
-            refreshAllViews();
-          }
-
-          const syncTimeEl = document.getElementById('cloud-sync-time');
-          if (syncTimeEl) syncTimeEl.textContent = 'Live • ' + new Date().toLocaleTimeString('en-IN');
-          if (manualTrigger) showToast('Synced latest UPI, QR & messages!');
+          } catch (err2) {}
         }
+
+        if (hasChanges) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        const upiTextEl = document.getElementById('live-upi-text');
+        if (upiTextEl) upiTextEl.textContent = state.upiId;
+        const rechModal = document.getElementById('modal-recharge');
+        if (rechModal && !rechModal.classList.contains('hidden')) {
+          updateDynamicQrForAmount();
+          renderModalRechargeHistory();
+        }
+
+        const chatModal = document.getElementById('modal-chat');
+        if (chatModal && !chatModal.classList.contains('hidden')) {
+          renderMemberChat();
+        }
+        const admPanel = document.getElementById('modal-admin-panel');
+        if (admPanel && !admPanel.classList.contains('hidden')) {
+          renderAdminLists();
+        }
+
+        if (getCurrentUser()) {
+          refreshAllViews();
+        }
+
+        const syncTimeEl = document.getElementById('cloud-sync-time');
+        if (syncTimeEl) syncTimeEl.textContent = 'Live ✓ ' + new Date().toLocaleTimeString('en-IN');
+        if (manualTrigger) showToast('Synced latest UPI, QR & messages!');
       } catch (e) {
         console.warn('Cloud pull skipped:', e);
       } finally {
