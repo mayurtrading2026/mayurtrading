@@ -919,11 +919,12 @@
     ];
 
     const FALLBACK_IMG = 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=600&q=80';
-    const STORAGE_KEY = 'MAYUR_TRADING_PORTAL_V6';
+    const STORAGE_KEY = 'MAYUR_TRADING_PORTAL_V7';
     const SESSION_KEY = 'MAYUR_TRADING_ACTIVE_SESSION_PHONE';
-    const GLOBAL_CLOUD_ENDPOINT = 'https://kvdb.io/A2x9KmPq7Lw4VnRt8Yz3Bc/mayur_trading_live_v6';
-    const GLOBAL_EVENT_TOPIC = 'mayur_trading_live_broadcast_v6_9821';
+    const CLOUD_CHANNEL_ID = 'mayur_trading_2026_official_sync_v7';
+    const NTFY_BASE = 'https://ntfy.sh/' + CLOUD_CHANNEL_ID;
     let isCloudSyncing = false;
+    let lastProcessedEventId = '';
 
     // =====================================
     // APPLICATION STATE & PERSISTENCE
@@ -946,7 +947,7 @@
 
     function loadState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('MAYUR_TRADING_PORTAL_V5');
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('MAYUR_TRADING_PORTAL_V6') || localStorage.getItem('MAYUR_TRADING_PORTAL_V5');
         if (raw) {
           const parsed = JSON.parse(raw);
           state = { ...state, ...parsed };
@@ -960,192 +961,122 @@
       }
     }
 
-    async function pushFullStateToCloud() {
-      let success = false;
+    // Publish an atomic event to the global CORS-enabled ntfy.sh stream (no pre-registration needed!)
+    async function broadcastCloudEvent(eventType, eventData) {
       try {
-        // 1. Fetch latest remote state from CORS-enabled KVDB store so customer items merge safely
-        let remote = {};
-        try {
-          const getRes = await fetch(`${GLOBAL_CLOUD_ENDPOINT}?_=${Date.now()}`, { cache: 'no-store' });
-          if (getRes.ok) {
-            const txt = await getRes.text();
-            if (txt) remote = JSON.parse(txt);
-          }
-        } catch (err) {}
-
-        const mergedRecharges = mergeById(remote.recharges || [], state.recharges || []);
-        const mergedWithdrawals = mergeById(remote.withdrawals || [], state.withdrawals || []);
-        const mergedMessages = mergeMessagesById(remote.messages || [], state.messages || []);
-
-        state.recharges = mergedRecharges;
-        state.withdrawals = mergedWithdrawals;
-        state.messages = mergedMessages;
-
-        const payload = {
-          upiId: state.upiId,
-          customQrDataUrl: state.customQrDataUrl || '',
-          adminPin: state.adminPin,
-          recharges: mergedRecharges,
-          withdrawals: mergedWithdrawals,
-          messages: mergedMessages,
-          updatedAt: Date.now()
-        };
-
-        // 2. Write to CORS-enabled KVDB store (supports GET & POST from any domain including github.io)
-        const postRes = await fetch(GLOBAL_CLOUD_ENDPOINT, {
+        const envelope = JSON.stringify({
+          type: eventType,
+          data: eventData,
+          ts: Date.now()
+        });
+        const res = await fetch(NTFY_BASE, {
           method: 'POST',
-          body: JSON.stringify(payload)
+          headers: { 'Content-Type': 'text/plain' },
+          body: envelope
         });
-        if (postRes.ok) success = true;
-
-        // 3. Also broadcast via ntfy.sh CORS-enabled pub/sub as instant secondary channel
-        try {
-          const pubRes = await fetch(`https://ntfy.sh/${GLOBAL_EVENT_TOPIC}`, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-          });
-          if (pubRes.ok) success = true;
-        } catch (e2) {}
-
         const syncTimeEl = document.getElementById('cloud-sync-time');
-        if (syncTimeEl) {
-          syncTimeEl.textContent = success
-            ? 'Live Synced ✓ ' + new Date().toLocaleTimeString('en-IN')
-            : 'Syncing...';
+        if (syncTimeEl && res.ok) {
+          syncTimeEl.textContent = 'Live Synced ✓ ' + new Date().toLocaleTimeString('en-IN');
         }
+        return res.ok;
       } catch (e) {
-        console.warn('Cloud push error:', e);
+        console.warn('Broadcast error:', e);
+        return false;
       }
-      return success;
     }
 
-    function mergeById(remoteArr, localArr) {
-      const map = new Map();
-      remoteArr.forEach(item => { if (item && item.id) map.set(item.id, item); });
-      localArr.forEach(item => {
-        if (!item || !item.id) return;
-        const existing = map.get(item.id);
-        if (!existing) {
-          map.set(item.id, item);
-        } else if (item.status !== 'Pending') {
-          map.set(item.id, item);
-        }
+    async function pushFullStateToCloud() {
+      return await broadcastCloudEvent('CONFIG_UPDATE', {
+        upiId: state.upiId,
+        customQrDataUrl: state.customQrDataUrl || '',
+        adminPin: state.adminPin
       });
-      return Array.from(map.values());
     }
 
-    function mergeMessagesById(remoteArr, localArr) {
-      const map = new Map();
-      remoteArr.forEach(m => { if (m && m.id) map.set(m.id, m); });
-      localArr.forEach(m => {
-        if (!m || !m.id) return;
-        const existing = map.get(m.id);
-        if (!existing) {
-          map.set(m.id, m);
-        } else if (m.reply && !existing.reply) {
-          map.set(m.id, m);
+    function applyCloudEvent(envelope) {
+      if (!envelope || !envelope.type || !envelope.data) return false;
+      let changed = false;
+      const d = envelope.data;
+
+      if (envelope.type === 'CONFIG_UPDATE') {
+        if (d.upiId && state.upiId !== d.upiId) {
+          state.upiId = d.upiId;
+          changed = true;
         }
-      });
-      return Array.from(map.values());
-    }
-
-    function applyRemoteSnapshot(remote) {
-      if (!remote || typeof remote !== 'object') return false;
-      let hasChanges = false;
-
-      if (remote.upiId && state.upiId !== remote.upiId) {
-        state.upiId = remote.upiId;
-        hasChanges = true;
-      }
-      if (typeof remote.customQrDataUrl === 'string' && state.customQrDataUrl !== remote.customQrDataUrl) {
-        state.customQrDataUrl = remote.customQrDataUrl;
-        hasChanges = true;
-      }
-      if (remote.adminPin && state.adminPin !== remote.adminPin) {
-        state.adminPin = remote.adminPin;
-        hasChanges = true;
-      }
-
-      if (Array.isArray(remote.recharges)) {
-        const mergedR = mergeById(remote.recharges, state.recharges);
-        mergedR.forEach(r => {
-          const localOld = state.recharges.find(lr => lr.id === r.id);
-          if (r.status === 'Approved' && (!localOld || localOld.status !== 'Approved')) {
-            if (state.users[r.userPhone]) {
-              state.users[r.userPhone].balance = (state.users[r.userPhone].balance || 0) + r.amount;
-            }
+        if (typeof d.customQrDataUrl === 'string' && state.customQrDataUrl !== d.customQrDataUrl) {
+          state.customQrDataUrl = d.customQrDataUrl;
+          changed = true;
+        }
+        if (d.adminPin && state.adminPin !== d.adminPin) {
+          state.adminPin = d.adminPin;
+          changed = true;
+        }
+      } else if (envelope.type === 'NEW_RECHARGE') {
+        if (d.id && !state.recharges.some(r => r.id === d.id)) {
+          state.recharges.unshift(d);
+          changed = true;
+        }
+      } else if (envelope.type === 'RECHARGE_STATUS') {
+        const item = state.recharges.find(r => r.id === d.id);
+        if (item && item.status !== d.status) {
+          item.status = d.status;
+          if (d.status === 'Approved' && state.users[item.userPhone]) {
+            state.users[item.userPhone].balance = (state.users[item.userPhone].balance || 0) + item.amount;
           }
-        });
-        if (JSON.stringify(mergedR) !== JSON.stringify(state.recharges)) {
-          state.recharges = mergedR;
-          hasChanges = true;
+          changed = true;
         }
-      }
-
-      if (Array.isArray(remote.withdrawals)) {
-        const mergedW = mergeById(remote.withdrawals, state.withdrawals);
-        mergedW.forEach(w => {
-          const localOld = state.withdrawals.find(lw => lw.id === w.id);
-          if (w.status === 'Rejected' && (!localOld || localOld.status !== 'Rejected')) {
-            if (state.users[w.userPhone]) {
-              state.users[w.userPhone].balance = (state.users[w.userPhone].balance || 0) + w.amount;
-            }
+      } else if (envelope.type === 'NEW_WITHDRAWAL') {
+        if (d.id && !state.withdrawals.some(w => w.id === d.id)) {
+          state.withdrawals.unshift(d);
+          changed = true;
+        }
+      } else if (envelope.type === 'WITHDRAWAL_STATUS') {
+        const item = state.withdrawals.find(w => w.id === d.id);
+        if (item && item.status !== d.status) {
+          item.status = d.status;
+          if (d.status === 'Rejected' && state.users[item.userPhone]) {
+            state.users[item.userPhone].balance = (state.users[item.userPhone].balance || 0) + item.amount;
           }
-        });
-        if (JSON.stringify(mergedW) !== JSON.stringify(state.withdrawals)) {
-          state.withdrawals = mergedW;
-          hasChanges = true;
+          changed = true;
+        }
+      } else if (envelope.type === 'NEW_MESSAGE') {
+        if (d.id && !state.messages.some(m => m.id === d.id)) {
+          state.messages.push(d);
+          changed = true;
+        }
+      } else if (envelope.type === 'MESSAGE_REPLY') {
+        const msg = state.messages.find(m => m.id === d.id);
+        if (msg && msg.reply !== d.reply) {
+          msg.reply = d.reply;
+          changed = true;
         }
       }
-
-      if (Array.isArray(remote.messages)) {
-        const mergedM = mergeMessagesById(remote.messages, state.messages);
-        if (JSON.stringify(mergedM) !== JSON.stringify(state.messages)) {
-          state.messages = mergedM;
-          hasChanges = true;
-        }
-      }
-
-      return hasChanges;
+      return changed;
     }
 
     async function pullFromGlobalCloud(manualTrigger = false) {
       if (isCloudSyncing) return;
       isCloudSyncing = true;
       try {
+        const res = await fetch(`${NTFY_BASE}/json?poll=1&since=72h&_=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) return;
+
+        const rawText = await res.text();
+        const lines = rawText.trim().split('\n');
         let hasChanges = false;
-        let fetchedOk = false;
 
-        // 1. Primary CORS-enabled KVDB pull
-        try {
-          const res = await fetch(`${GLOBAL_CLOUD_ENDPOINT}?_=${Date.now()}`, { cache: 'no-store' });
-          if (res.ok) {
-            const txt = await res.text();
-            if (txt) {
-              const remote = JSON.parse(txt);
-              if (applyRemoteSnapshot(remote)) hasChanges = true;
-              fetchedOk = true;
-            }
-          }
-        } catch (err1) {}
-
-        // 2. Fallback ntfy.sh JSON stream pull
-        if (!fetchedOk) {
+        for (const line of lines) {
+          if (!line) continue;
           try {
-            const ntfyRes = await fetch(`https://ntfy.sh/${GLOBAL_EVENT_TOPIC}/json?poll=1&since=24h`, { cache: 'no-store' });
-            if (ntfyRes.ok) {
-              const lines = (await ntfyRes.text()).trim().split('\n');
-              for (const line of lines) {
-                if (!line) continue;
-                const pkt = JSON.parse(line);
-                if (pkt.event === 'message' && pkt.message) {
-                  const remote = JSON.parse(pkt.message);
-                  if (applyRemoteSnapshot(remote)) hasChanges = true;
-                  fetchedOk = true;
-                }
+            const pkt = JSON.parse(line);
+            if (pkt.event === 'message' && pkt.message) {
+              const envelope = JSON.parse(pkt.message);
+              if (applyCloudEvent(envelope)) {
+                hasChanges = true;
               }
+              if (pkt.id) lastProcessedEventId = pkt.id;
             }
-          } catch (err2) {}
+          } catch (parseErr) {}
         }
 
         if (hasChanges) {
@@ -1689,7 +1620,7 @@
       state.recharges.unshift(newRech);
 
       saveState();
-      pushFullStateToCloud();
+      broadcastCloudEvent('NEW_RECHARGE', newRech);
       document.getElementById('rech-utr').value = '';
       renderModalRechargeHistory();
       refreshAllViews();
@@ -1830,7 +1761,7 @@
       state.withdrawals.unshift(newWd);
 
       saveState();
-      pushFullStateToCloud();
+      broadcastCloudEvent('NEW_WITHDRAWAL', newWd);
       document.getElementById('wd-amount').value = '';
       document.getElementById('wd-avail-bal').textContent = user.balance.toLocaleString('en-IN');
       renderModalWithdrawHistory();
@@ -2031,7 +1962,7 @@
       };
       state.messages.push(newMsg);
       saveState();
-      pushFullStateToCloud();
+      broadcastCloudEvent('NEW_MESSAGE', newMsg);
       input.value = '';
       renderMemberChat();
       showToast('Message sent to Admin Inbox!');
@@ -2059,27 +1990,6 @@
       pullFromGlobalCloud();
     }
 
-    // =====================================
-    // ADMIN PANEL & APPROVALS
-    // =====================================
-    function openAdminGate() {
-      document.getElementById('admin-pin-input').value = '';
-      openModal('modal-admin-gate');
-    }
-
-    function verifyAdminPin() {
-      const entered = document.getElementById('admin-pin-input').value.trim();
-      if (entered !== state.adminPin) {
-        showToast('Invalid Admin PIN!');
-        return;
-      }
-      closeModal('modal-admin-gate');
-      document.getElementById('adm-upi-input').value = state.upiId;
-      switchAdminTab('upi');
-      renderAdminLists();
-      openModal('modal-admin-panel');
-    }
-
     function switchAdminTab(tab) {
       ['upi', 'utr', 'wd', 'inbox'].forEach(t => {
         const sec = document.getElementById('adm-sec-' + t);
@@ -2102,12 +2012,12 @@
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const maxDim = 160;
+          const maxDim = 110;
           const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          state.pendingQrUpload = canvas.toDataURL('image/jpeg', 0.55);
+          state.pendingQrUpload = canvas.toDataURL('image/jpeg', 0.42);
           showToast('QR photo ready! Click Save & Update Live UPI / QR.');
         };
         img.src = ev.target.result;
@@ -2127,7 +2037,7 @@
       if (ok) {
         showToast('Live UPI ID & QR updated for ALL members globally!');
       } else {
-        showToast('Saved locally; retrying global cloud broadcast...');
+        showToast('Network slow—please check internet and tap Save again.');
       }
     }
 
@@ -2165,7 +2075,7 @@
         }
       }
       saveState();
-      pushFullStateToCloud();
+      broadcastCloudEvent('RECHARGE_STATUS', { id, status: action });
       renderAdminLists();
       refreshAllViews();
       showToast(`UTR ${action}: ₹${item.amount}`);
@@ -2184,7 +2094,7 @@
         }
       }
       saveState();
-      pushFullStateToCloud();
+      broadcastCloudEvent('WITHDRAWAL_STATUS', { id, status: action });
       renderAdminLists();
       refreshAllViews();
       showToast(`Withdrawal marked ${action}`);
@@ -2198,7 +2108,7 @@
       if (!replyText) return;
       msg.reply = replyText;
       saveState();
-      pushFullStateToCloud();
+      broadcastCloudEvent('MESSAGE_REPLY', { id, reply: replyText });
       renderAdminLists();
       showToast('Reply sent to member!');
     }
